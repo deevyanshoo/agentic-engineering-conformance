@@ -73,3 +73,9 @@ Independent read-only review completed against `6beb272..9012861`. The reviewer 
 Unresolved blockers: none.
 
 Completion state: `M1_REFERENCE_COMPLETE`. The repository remains local and unpublished; no remote publication authority exists.
+
+## Post-M1 remote establishment
+
+On 2026-08-27, after `M1_REFERENCE_COMPLETE` was committed at `2f5d200b4382edd37b1e78d9bada797bb5541614`, the authenticated owner `deevyanshoo` established `https://github.com/deevyanshoo/agentic-engineering-conformance` as the authoritative `origin`. The existing `main` history was pushed without rewriting and now tracks `origin/main`.
+
+The GitHub repository is `PRIVATE`. This subsequent transition does not change the historical M1 completion evidence. Public release/publication readiness has not been reached, and M2 real-host adapter work has not begun.
