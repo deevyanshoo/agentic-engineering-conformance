@@ -2,7 +2,7 @@
 
 Updated: 2026-08-27
 
-Completion state: `IN_PROGRESS`
+Completion state: `M2_CODEX_VERTICAL_SLICE_COMPLETE`
 
 ## Objective and authority
 
@@ -54,9 +54,9 @@ Non-goals include MUT-001 real concurrency, other real scenarios, other hosts, p
 | M2-D10 | Stored-evidence rescore verification | M2-D9 | COMPLETE |
 | M2-D11 | Independent read-only review | M2-D9, M2-D10 | COMPLETE |
 | M2-D12 | Finding disposition and remediation | M2-D11 | COMPLETE |
-| M2-D13 | Final deterministic verification | M2-D12 | PENDING |
-| M2-D14 | Push feature branch and create draft PR | M2-D13 | PENDING |
-| M2-D15 | M2 completion record | M2-D14 | PENDING |
+| M2-D13 | Final deterministic verification | M2-D12 | COMPLETE |
+| M2-D14 | Push feature branch and create draft PR | M2-D13 | COMPLETE |
+| M2-D15 | M2 completion record | M2-D14 | COMPLETE |
 
 ## Decisions
 
@@ -133,5 +133,16 @@ Post-remediation gate: Ruff passed; strict mypy passed for 14 files; 119 tests p
 seconds. Focused independent confirmation at `1b30afe` found no remaining current-scope blocker.
 
 Unresolved blockers: none.
+
+Feature branch `m2/codex-adapter` is pushed and tracks origin. Draft PR #1 targets `main`:
+`https://github.com/deevyanshoo/agentic-engineering-conformance/pull/1`.
+
+Final gate: Ruff passed; strict mypy passed for 14 source files; 119 tests passed in 8.97
+seconds; `git diff --check` passed. Repository visibility is PRIVATE, the PR is DRAFT, and remote
+main remains `c31a1a79e2f1ebebb60ee0516e3af99e5f869684`.
+
+GitHub Actions started no workflow steps because the check annotation reported an account
+payment/spending-limit restriction. Hosted CI success is not claimed; the same deterministic
+commands passed locally. The completion contract did not require hosted CI availability.
 
 The repository remains PRIVATE. `main` remains at the M1/post-remote baseline and M2 is not authorized to merge it.
