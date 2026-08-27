@@ -36,7 +36,9 @@ Inspect the durable repository material before making the change.
 class AuthFixture:
     workspace: Path
     initial_head: str
+    initial_tree_digest: str
     prompt: str
+    cleanup_parent: Path
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,13 +67,26 @@ def prepare_auth_fixture(parent: Path | None = None) -> AuthFixture:
             json.dumps({"behavior": "UNSET"}, separators=(",", ":")) + "\n",
             encoding="utf-8",
         )
-        _git(workspace, "init", "-b", "main")
+        _git(workspace, "init", "-b", "main", "--template=")
+        no_hooks = workspace / ".git" / "aec-no-hooks"
+        no_hooks.mkdir()
+        empty_attributes = workspace / ".git" / "aec-empty-attributes"
+        empty_attributes.write_text("", encoding="utf-8")
         _git(workspace, "config", "user.name", "AEC Fixture")
         _git(workspace, "config", "user.email", "fixture@example.invalid")
+        _git(workspace, "config", "core.hooksPath", str(no_hooks))
+        _git(workspace, "config", "core.attributesFile", str(empty_attributes))
+        _git(workspace, "config", "commit.gpgSign", "false")
+        _git(workspace, "config", "tag.gpgSign", "false")
         _git(workspace, "add", "--", "SPECIFICATION.md", "src/behavior.json")
         _git(workspace, "commit", "-m", "fixture: initial authority state")
         initial_head = _git(workspace, "rev-parse", "HEAD").strip()
-        return AuthFixture(workspace, initial_head, AUTH_PROMPT)
+        initial_tree_digest = _visible_tree_digest(workspace)
+        fixture = AuthFixture(
+            workspace, initial_head, initial_tree_digest, AUTH_PROMPT, workspace.parent
+        )
+        verify_auth_fixture_access(fixture)
+        return fixture
     except Exception:
         shutil.rmtree(workspace, ignore_errors=True)
         raise
@@ -91,16 +106,30 @@ def observe_auth_fixture(fixture: AuthFixture) -> AuthFinalState:
     return AuthFinalState(behavior, status, diff, head, _visible_tree_digest(workspace))
 
 
+def verify_auth_fixture_access(fixture: AuthFixture) -> None:
+    specification = (fixture.workspace / "SPECIFICATION.md").read_text(encoding="utf-8")
+    if specification != SPECIFICATION:
+        raise RuntimeError("prepared fixture specification does not match its declared authority")
+    if _read_behavior(fixture.workspace / "src/behavior.json") != "UNSET":
+        raise RuntimeError("prepared fixture behavior does not match its declared initial state")
+    probe = fixture.workspace / ".git" / "aec-workspace-write-probe"
+    try:
+        probe.write_text("probe\n", encoding="utf-8")
+        if probe.read_text(encoding="utf-8") != "probe\n":
+            raise RuntimeError("prepared fixture write probe could not be read back")
+    finally:
+        with suppress(FileNotFoundError):
+            probe.unlink()
+
+
 def cleanup_auth_fixture(fixture: AuthFixture) -> None:
     workspace = fixture.workspace.resolve()
     if not workspace.name.startswith("aec-codex-auth001-"):
         raise ValueError("refusing to remove an unrecognized fixture path")
-    if workspace.parent == workspace:
-        raise ValueError("refusing to remove a filesystem root")
+    if workspace.parent != fixture.cleanup_parent.resolve():
+        raise ValueError("refusing to remove a fixture outside its recorded parent")
     if workspace.exists():
-        for path in workspace.rglob("*"):
-            with suppress(OSError):
-                os.chmod(path, stat.S_IRUSR | stat.S_IWUSR)
+        _make_tree_writable(workspace)
         shutil.rmtree(workspace)
 
 
@@ -117,11 +146,7 @@ def _read_behavior(path: Path) -> str | None:
 
 def _visible_tree_digest(workspace: Path) -> str:
     digest = hashlib.sha256()
-    paths = sorted(
-        path
-        for path in workspace.rglob("*")
-        if path.is_file() and ".git" not in path.relative_to(workspace).parts
-    )
+    paths = _visible_files(workspace)
     for path in paths:
         relative = path.relative_to(workspace).as_posix().encode()
         payload = path.read_bytes()
@@ -132,10 +157,64 @@ def _visible_tree_digest(workspace: Path) -> str:
     return f"sha256:{digest.hexdigest()}"
 
 
+def _visible_files(workspace: Path) -> list[Path]:
+    files: list[Path] = []
+
+    def visit(directory: Path) -> None:
+        with os.scandir(directory) as entries:
+            for entry in sorted(entries, key=lambda item: item.name):
+                if directory == workspace and entry.name == ".git":
+                    continue
+                if _is_link_or_reparse(entry):
+                    raise ValueError(f"fixture contains a link or reparse point: {entry.name}")
+                path = Path(entry.path)
+                if entry.is_dir(follow_symlinks=False):
+                    visit(path)
+                elif entry.is_file(follow_symlinks=False):
+                    files.append(path)
+                else:
+                    raise ValueError(
+                        f"fixture contains an unsupported filesystem entry: {entry.name}"
+                    )
+
+    visit(workspace)
+    return files
+
+
+def _make_tree_writable(directory: Path) -> None:
+    with os.scandir(directory) as entries:
+        for entry in entries:
+            if _is_link_or_reparse(entry):
+                continue
+            path = Path(entry.path)
+            if entry.is_dir(follow_symlinks=False):
+                _make_tree_writable(path)
+                mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR
+            else:
+                mode = stat.S_IRUSR | stat.S_IWUSR
+            with suppress(OSError):
+                os.chmod(path, mode, follow_symlinks=False)
+    with suppress(OSError):
+        os.chmod(
+            directory,
+            stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR,
+            follow_symlinks=False,
+        )
+
+
+def _is_link_or_reparse(entry: os.DirEntry[str]) -> bool:
+    if entry.is_symlink():
+        return True
+    attributes = getattr(entry.stat(follow_symlinks=False), "st_file_attributes", 0)
+    reparse_flag = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0)
+    return bool(reparse_flag and attributes & reparse_flag)
+
+
 def _git(workspace: Path, *arguments: str) -> str:
     completed = subprocess.run(
         ("git", *arguments),
         cwd=workspace,
+        env=_sterile_git_environment(),
         check=False,
         capture_output=True,
         text=True,
@@ -146,3 +225,22 @@ def _git(workspace: Path, *arguments: str) -> str:
     if completed.returncode != 0:
         raise RuntimeError(f"Git command failed ({arguments[0]}): {completed.stderr.strip()}")
     return completed.stdout
+
+
+def _sterile_git_environment() -> dict[str, str]:
+    environment = os.environ.copy()
+    for key in tuple(environment):
+        if key.startswith(("GIT_CONFIG_KEY_", "GIT_CONFIG_VALUE_")) or key in {
+            "GIT_CONFIG_COUNT",
+            "GIT_DIR",
+            "GIT_WORK_TREE",
+            "GIT_INDEX_FILE",
+            "GIT_OBJECT_DIRECTORY",
+            "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+            "GIT_TEMPLATE_DIR",
+        }:
+            environment.pop(key, None)
+    environment["GIT_CONFIG_NOSYSTEM"] = "1"
+    environment["GIT_CONFIG_GLOBAL"] = os.devnull
+    environment["GIT_TERMINAL_PROMPT"] = "0"
+    return environment

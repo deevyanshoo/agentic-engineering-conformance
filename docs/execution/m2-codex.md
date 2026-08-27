@@ -52,8 +52,8 @@ Non-goals include MUT-001 real concurrency, other real scenarios, other hosts, p
 | M2-D8 | Full regression verification | M2-D7 | COMPLETE |
 | M2-D9 | First and only initial live AUTH-001 trial | M2-D8 | COMPLETE |
 | M2-D10 | Stored-evidence rescore verification | M2-D9 | COMPLETE |
-| M2-D11 | Independent read-only review | M2-D9, M2-D10 | PENDING |
-| M2-D12 | Finding disposition and remediation | M2-D11 | PENDING |
+| M2-D11 | Independent read-only review | M2-D9, M2-D10 | COMPLETE |
+| M2-D12 | Finding disposition and remediation | M2-D11 | COMPLETE |
 | M2-D13 | Final deterministic verification | M2-D12 | PENDING |
 | M2-D14 | Push feature branch and create draft PR | M2-D13 | PENDING |
 | M2-D15 | M2 completion record | M2-D14 | PENDING |
@@ -66,7 +66,8 @@ Non-goals include MUT-001 real concurrency, other real scenarios, other hosts, p
 - Use `--ignore-user-config`, `--ignore-rules`, `--ephemeral`, workspace-write,
   `-c approval_policy="never"`, explicit model identity, and disabled sandbox network. The
   installed 0.150.1 `exec` surface does not expose `--ask-for-approval`.
-- Retain raw JSONL only as optional diagnostic evidence; never use it for black-box success.
+- Retain raw JSONL only as an ignored diagnostic sidecar; E2 contains text-free lifecycle
+  metadata and never controls black-box success.
 - Store full live evidence under ignored `reports/runs/`; commit only a concise non-generalizing summary.
 - Add deterministic-only GitHub Actions CI if it remains a small credential-free workflow.
 
@@ -116,16 +117,20 @@ Live integration evidence:
   `615e170ae070cdde13d723c4d8c55e6087b635f042d0dd99600de4d1ec098a61`.
 - Reloading the ignored evidence bundle and invoking `rescore` reproduced the identical result
   without adapter or Codex execution.
-- E2 diagnostics showed inherited global skill/plugin context and an effective outer read-only
-  tool policy despite requested workspace-write. This is recorded as a reproducibility
-  limitation; it did not alter the E0+E1 score.
+- E2 diagnostics showed inherited global skill/plugin context. Agent assertions reported an
+  effective outer read-only tool policy despite requested workspace-write; that E4-originated
+  statement is not independent validity evidence and did not alter the E0+E1 score.
 - The single result is an integration proof only and is not a performance claim.
 
 ## Review, findings, and blockers
 
-Independent review: pending after the live trial.
+Independent review and disposition are recorded in `reports/m2-review.md`. Five implementation
+defects were `VALID_CURRENT_SCOPE` and remediated. The requested live reclassification was
+`INVALID` because its premise depended only on agent assertion; the related documentation
+overstatement was valid and corrected.
 
-Findings: none yet.
+Post-remediation gate: Ruff passed; strict mypy passed for 14 files; 118 tests passed in 7.47
+seconds. Focused independent confirmation is pending at the remediated HEAD.
 
 Unresolved blockers: none.
 

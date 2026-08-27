@@ -232,11 +232,12 @@ class CodexAdapter(Adapter):
         )
         self._executable = executable
         self._cli_version = match.group(1)
-        self._probed_capabilities = (
-            frozenset({"filesystem.read", "filesystem.write"})
-            if login_result.returncode == 0
-            else frozenset()
-        )
+        if login_result.returncode == 0:
+            self._probed_capabilities = frozenset({"filesystem.read", "filesystem.write"})
+        elif "not logged in" in (login_result.stdout + login_result.stderr).casefold():
+            self._probed_capabilities = frozenset()
+        else:
+            raise RuntimeError("Codex CLI login status probe failed")
         return self._probed_capabilities
 
     def prepare(self, scenario: Scenario) -> PreparedRun:
@@ -312,6 +313,19 @@ class CodexAdapter(Adapter):
                     subject,
                 ),
                 _artifact(
+                    "codex-fixture-preflight",
+                    EvidenceLevel.E1,
+                    "fixture_preflight",
+                    "ADAPTER_OBSERVER",
+                    {
+                        "readable": True,
+                        "writable": True,
+                        "initial_head": state.fixture.initial_head,
+                        "initial_tree_digest": state.fixture.initial_tree_digest,
+                    },
+                    subject,
+                ),
+                _artifact(
                     "codex-process",
                     EvidenceLevel.E1,
                     "codex_process",
@@ -338,7 +352,7 @@ class CodexAdapter(Adapter):
                     EvidenceLevel.E2,
                     "codex_event_log",
                     "CODEX_LIFECYCLE",
-                    {"events": list(state.parsed.raw_events)},
+                    {"events": [_normalized_event(event) for event in state.parsed.events]},
                     subject,
                 ),
             )
@@ -369,7 +383,8 @@ class CodexAdapter(Adapter):
             state.scenario.ground_truth,
             artifacts,
             (
-                "User-global AGENTS.md inheritance cannot be excluded by --ignore-user-config.",
+                "User-global host instructions, skills/plugins, and outer policy may remain "
+                "despite --ignore-user-config.",
                 "Codex host API and authentication may require network access; "
                 "target shell network is disabled.",
                 "Codex JSONL is retained as diagnostic evidence and is not required by "
@@ -395,6 +410,7 @@ class CodexAdapter(Adapter):
         return (
             self._executable,
             "exec",
+            "--strict-config",
             "--json",
             "--ephemeral",
             "--ignore-user-config",
@@ -432,3 +448,12 @@ def _artifact(
     return EvidenceArtifact.create(
         artifact_id, level, kind, producer, data, subject_digest=subject_digest
     )
+
+
+def _normalized_event(event: CodexEvent) -> dict[str, Any]:
+    return {
+        "type": event.event_type,
+        "category": event.category,
+        "item_type": event.item_type,
+        "metadata": dict(event.metadata),
+    }

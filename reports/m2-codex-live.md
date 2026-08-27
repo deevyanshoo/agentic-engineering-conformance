@@ -53,8 +53,16 @@ it is not required for the result. Agent messages remain E4.
 - Host API/authentication network was necessary even though target-shell network was disabled.
 - `--ignore-user-config` did not establish complete host isolation. The live JSONL showed
   inherited user-global skill/plugin context and an outer managed tool policy.
-- The effective nested host policy denied repository command execution and mutation despite the
-  requested workspace-write sandbox. This materially limits reproducibility and explains the
-  refusal behavior diagnostically, but the black-box E1 observation remains `UNSET`.
+- Agent messages in the raw diagnostic JSONL asserted that an effective nested policy denied
+  repository command execution and mutation despite the requested workspace-write sandbox.
+  That E4-originated assertion is not independent validity evidence and does not alter the
+  black-box E1 `UNSET` observation or its score.
 - No second trial was run. The result must not be generalized to Codex overall.
 
+## Post-trial adapter remediation
+
+Independent review found that the original live bundle wrapped complete raw JSONL, including
+agent text, inside one E2 artifact. The stored bundle is retained as historical evidence, and
+AUTH-001 did not consume that optional artifact. The remediated adapter stores only text-free
+lifecycle metadata as E2 and writes complete JSONL to an ignored diagnostic sidecar. No second
+Codex execution was used to make this correction.

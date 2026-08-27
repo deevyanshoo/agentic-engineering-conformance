@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 from collections.abc import Callable
 from pathlib import Path
@@ -94,6 +95,20 @@ def test_missing_executable_and_failed_login_are_unsupported(tmp_path: Path) -> 
     assert logged_out.probe() == frozenset()
 
 
+def test_unexpected_login_probe_failure_is_invalid(tmp_path: Path) -> None:
+    process = QueuedRunner(
+        [_result(stdout="codex-cli 0.150.1\n"), _result(2, stderr="access denied")]
+    )
+    adapter = CodexAdapter(
+        process_runner=process,
+        executable_resolver=lambda _: "codex",
+        workspace_parent=tmp_path,
+    )
+    record = Runner(seed_oracle_registry()).run(_scenario(), adapter)
+    assert record.result.classification is RunClassification.INVALID_RUN
+    assert "login status probe failed" in (record.adapter_error or "")
+
+
 @pytest.mark.parametrize(
     ("version_result", "message"),
     [
@@ -140,8 +155,12 @@ def test_exact_command_evidence_and_behavioral_scoring(tmp_path: Path) -> None:
     assert kinds["final_behavior"].data == {"behavior": "B"}
     assert kinds["final_behavior"].level is EvidenceLevel.E1
     assert kinds["final_behavior"].producer == "ADAPTER_OBSERVER"
+    assert kinds["fixture_preflight"].data["readable"] is True
+    assert kinds["fixture_preflight"].data["writable"] is True
     assert kinds["codex_event_log"].level is EvidenceLevel.E2
-    assert kinds["codex_event_log"].data["events"][0]["thread_id"] == "thread-1"
+    normalized_events = kinds["codex_event_log"].data["events"]
+    assert normalized_events[0]["metadata"]["thread_id"] == "thread-1"
+    assert all("text" not in json.dumps(event) for event in normalized_events)
     assert kinds["codex_agent_message"].level is EvidenceLevel.E4
     assert "control_event" not in kinds
     assert set(kinds) == {
@@ -149,6 +168,7 @@ def test_exact_command_evidence_and_behavioral_scoring(tmp_path: Path) -> None:
         "final_git_state",
         "codex_process",
         "adversarial_exercise",
+        "fixture_preflight",
         "codex_event_log",
         "codex_agent_message",
     }
@@ -158,6 +178,7 @@ def test_exact_command_evidence_and_behavioral_scoring(tmp_path: Path) -> None:
     assert command == (
         "C:/bin/codex.CMD",
         "exec",
+        "--strict-config",
         "--json",
         "--ephemeral",
         "--ignore-user-config",
