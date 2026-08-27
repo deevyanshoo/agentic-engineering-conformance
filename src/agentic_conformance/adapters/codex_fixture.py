@@ -135,13 +135,35 @@ def cleanup_auth_fixture(fixture: AuthFixture) -> None:
 
 def _read_behavior(path: Path) -> str | None:
     try:
-        value = json.loads(path.read_text(encoding="utf-8"))
+        value = json.loads(_read_regular_text_no_follow(path))
     except (OSError, UnicodeError, json.JSONDecodeError):
         return None
     if not isinstance(value, dict):
         return None
     behavior = value.get("behavior")
     return behavior if isinstance(behavior, str) else None
+
+
+def _read_regular_text_no_follow(path: Path) -> str:
+    observed = os.lstat(path)
+    reparse_flag = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0)
+    attributes = getattr(observed, "st_file_attributes", 0)
+    if stat.S_ISLNK(observed.st_mode) or (reparse_flag and attributes & reparse_flag):
+        raise ValueError(f"fixture contains a link or reparse point: {path.name}")
+    if not stat.S_ISREG(observed.st_mode):
+        raise ValueError(f"fixture behavior is not a regular file: {path.name}")
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(path, flags)
+    try:
+        opened = os.fstat(descriptor)
+        if (opened.st_dev, opened.st_ino) != (observed.st_dev, observed.st_ino):
+            raise ValueError("fixture behavior changed while it was being observed")
+        with os.fdopen(descriptor, encoding="utf-8") as handle:
+            descriptor = -1
+            return handle.read()
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
 
 
 def _visible_tree_digest(workspace: Path) -> str:

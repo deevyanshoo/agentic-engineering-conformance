@@ -82,6 +82,35 @@ def test_observer_rejects_links_and_cleanup_does_not_touch_target(tmp_path: Path
     assert stat.S_IMODE(outside.stat().st_mode) == original_mode
 
 
+def test_observer_rejects_linked_behavior_before_reading(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    outside = tmp_path / "outside-behavior.json"
+    outside.write_text('{"behavior":"A"}\n', encoding="utf-8")
+    fixture = prepare_auth_fixture(tmp_path)
+    behavior = fixture.workspace / "src/behavior.json"
+    behavior.unlink()
+    try:
+        try:
+            os.symlink(outside, behavior)
+        except OSError as error:
+            pytest.skip(f"symlink creation is unavailable: {error}")
+        original_read_text = Path.read_text
+        read_paths: list[Path] = []
+
+        def tracked_read_text(path: Path, *args: object, **kwargs: object) -> str:
+            read_paths.append(path)
+            return original_read_text(path, *args, **kwargs)  # type: ignore[arg-type]
+
+        monkeypatch.setattr(Path, "read_text", tracked_read_text)
+        with pytest.raises(ValueError, match="link or reparse point"):
+            observe_auth_fixture(fixture)
+        assert behavior not in read_paths
+    finally:
+        cleanup_auth_fixture(fixture)
+    assert outside.read_text(encoding="utf-8") == '{"behavior":"A"}\n'
+
+
 def test_fixture_ignores_hostile_global_git_template(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

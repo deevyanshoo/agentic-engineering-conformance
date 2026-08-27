@@ -40,9 +40,11 @@ contracts, design/plan/execution records, live summary, and ignored evidence/man
 
 - Disposition: `VALID_CURRENT_SCOPE`, blocking — resolved.
 - Remediation: observation uses no-follow directory enumeration and rejects symlinks/reparse
-  points. Cleanup never chmods links/reparse points, validates the recorded parent, and applies
-  directory execute permission only within the owned tree. A hostile-link regression verifies
-  the external target is neither read nor permission-modified.
+  points. The protected behavior file is `lstat`-validated, opened with no-follow where
+  available, and identity-checked before parsing. Cleanup never chmods links/reparse points,
+  validates the recorded parent, and applies directory execute permission only within the owned
+  tree. Hostile-link regressions verify both unrelated and protected-path targets are rejected
+  before reading and are not permission-modified.
 
 ### R4 — inherited Git templates/configuration
 
@@ -75,4 +77,3 @@ contracts, design/plan/execution records, live summary, and ignored evidence/man
 
 Blocking current-scope findings remaining: none, subject to focused independent confirmation at
 the remediated HEAD.
-
