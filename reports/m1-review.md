@@ -24,7 +24,7 @@ No finding is deferred as out of scope. All nine affect M1 experimental validity
 
 ## Remediation evidence
 
-Implementation coordinator status: all nine findings remediated; final independent confirmation pending.
+Implementation coordinator status: all nine findings remediated and independently confirmed resolved.
 
 - **R1:** benchmark loader now verifies and owns fixture E0; runner normalizes collected artifacts onto scenario E0; rescore rejects ground-truth mismatch. Regressions: adapter substitution and stored E0 substitution.
 - **R2:** artifact digest now covers ID, level, kind, producer, payload, and subject. Regressions mutate each envelope field independently, and the public value constructor validates canonical data plus the complete envelope digest.
@@ -48,10 +48,12 @@ The same independent reviewer checked remediation commit `ad3b36745c7837dc3e3972
 
 The coordinator accepted all three as continued `VALID_CURRENT_SCOPE` findings and reproduced them with failing tests before changing implementation. The second remediation added constructor-level envelope validation, conservative rejection of same-kind out-of-contract evidence, and a shared executed-classification `NOT_RUN` invariant in the model and both schemas. Fresh coordinator gates after the second remediation: Ruff passed; strict mypy passed for 11 source files; pytest reported 99 passed in 1.66 seconds.
 
+Final independent confirmation against exact clean HEAD `886371c0894ecc97648808bfa418c1a864757117` classified R2, R4, and R9 `RESOLVED` and reported no new M1 blocker. The reviewer independently obtained: Ruff clean; mypy clean for 11 source files; pytest 99 passed in 1.45 seconds; focused R4/R9 regressions 26 passed in 0.57 seconds. It also confirmed exactly six scenario definitions and no real or vendor-specific host adapter.
+
 ## Positive evidence
 
 The reviewer found disciplined scope, exactly six scenarios, separate functional/control fields and cross-product tests, correct normal UNSUPPORTED short-circuiting, normal adapter exception handling and cleanup, immutable payload snapshots, scenario identity binding during rescoring, fixture/scenario count checks, and conservative documentation/claims.
 
 ## Completion assessment
 
-At reviewed HEAD `9012861`, `M1_REFERENCE_COMPLETE` was not supportable. Both remediation rounds are implemented, but completion remains pending the reviewer's final confirmation and D14 verification.
+At reviewed HEAD `9012861`, `M1_REFERENCE_COMPLETE` was not supportable. At remediation HEAD `886371c`, every finding is resolved and independently confirmed; no review blocker remains.

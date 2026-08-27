@@ -31,8 +31,8 @@ Non-goals include hosted services, dashboards, new agent runtimes or workflow DS
 | D11 | Full deterministic verification | D1–D10 | COMPLETE |
 | D12 | Independent read-only review | D11 | COMPLETE |
 | D13 | Finding disposition/remediation | D12 | COMPLETE |
-| D14 | Final deterministic verification | D13 | PENDING |
-| D15 | M1 completion record | D14 | PENDING |
+| D14 | Final deterministic verification | D13 | COMPLETE |
+| D15 | M1 completion record | D14 | COMPLETE |
 
 ## Decisions
 
@@ -57,14 +57,19 @@ D11 pre-review verification (2026-08-27):
 - `python -m mypy src` — success, no issues in 11 source files.
 - `python -m pytest -q` — 46 passed in 1.06 seconds.
 
-Final D14 evidence remains pending.
+Final D14 verification (2026-08-27):
+
+- `python -m ruff check .` — all checks passed.
+- `python -m mypy --no-incremental src` — success, no issues in 11 source files.
+- `python -m pytest -q -p no:cacheprovider` — 99 passed in 1.66 seconds.
+- `git diff --check` — clean.
 
 ## Review evidence and findings
 
-Independent read-only review completed against `6beb272..9012861`. The reviewer independently observed 46 passing tests and reported nine findings. All are dispositioned `VALID_CURRENT_SCOPE` in `reports/m1-review.md`; none is deferred. A focused follow-up against `ad3b367` confirmed six resolved and identified incomplete closure for R2, R4, and R9. Those gaps were reproduced and remediated with constructor-integrity, evidence-shadowing, and reverse-`NOT_RUN` regressions. Final independent confirmation is pending.
+Independent read-only review completed against `6beb272..9012861`. The reviewer independently observed 46 passing tests and reported nine findings. All are dispositioned `VALID_CURRENT_SCOPE` in `reports/m1-review.md`; none is deferred. A focused follow-up against `ad3b367` confirmed six resolved and identified incomplete closure for R2, R4, and R9. Those gaps were reproduced and remediated with constructor-integrity, evidence-shadowing, and reverse-`NOT_RUN` regressions. Final independent confirmation against clean HEAD `886371c` marked R2, R4, and R9 resolved, independently passed Ruff, mypy, and all 99 tests, and found no new M1 blocker.
 
 ## Blockers and completion state
 
 Unresolved blockers: none.
 
-Completion state: IN_PROGRESS. This repository is not MERGE_READY or PUBLIC.
+Completion state: `M1_REFERENCE_COMPLETE`. The repository remains local and unpublished; no remote publication authority exists.
