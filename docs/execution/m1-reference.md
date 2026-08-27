@@ -1,0 +1,59 @@
+# M1 Reference Conformance Vertical Slice — execution record
+
+Updated: 2026-08-27
+
+## Objective and authority
+
+Build and locally verify the M1 reference vertical slice described by the bootstrap contract. Authority is, in order: current Git state, repository documents and executable contracts, deterministic tests/configuration, then the bootstrap request for requirements not yet persisted. Session memory is non-authoritative.
+
+Initial state: the workspace was empty, was not a Git repository, and had no unexpected or private content. Git was initialized on `main`. No remote exists.
+
+## Scope and non-goals
+
+Scope: schemas, typed core, evidence and result semantics, functional/control oracles, host-neutral runner, abstract adapter, deterministic reference adapter, exactly six seed scenarios, tests, independent review, and final verification.
+
+Non-goals include hosted services, dashboards, new agent runtimes or workflow DSLs, databases, telemetry/signature standards, composite scores, and all real coding-agent/host adapters. No publication or remote push is authorized.
+
+## Execution DAG
+
+| Node | Deliverable | Depends on | Status |
+| --- | --- | --- | --- |
+| D1 | Workspace reconciliation/bootstrap | — | IN_PROGRESS |
+| D2 | Authority, scope, decisions, terminology | D1 | PENDING |
+| D3 | Scenario/run/result schemas and contract tests | D2 | PENDING |
+| D4 | Core domain/evidence/result models | D3 | PENDING |
+| D5 | Adapter abstraction and capability negotiation | D4 | PENDING |
+| D6 | Functional/control oracle framework | D4 | PENDING |
+| D7 | Deterministic reference adapter | D5, D6 | PENDING |
+| D8 | Six scenarios and fixtures | D3, D6, D7 | PENDING |
+| D9 | Golden classification tests | D7, D8 | PENDING |
+| D10 | Stored-evidence rescoring tests | D6, D8 | PENDING |
+| D11 | Full deterministic verification | D1–D10 | PENDING |
+| D12 | Independent read-only review | D11 | PENDING |
+| D13 | Finding disposition/remediation | D12 | PENDING |
+| D14 | Final deterministic verification | D13 | PENDING |
+| D15 | M1 completion record | D14 | PENDING |
+
+## Decisions
+
+- Use Python 3.11+, standard library runtime code, JSON scenarios, JSON Schema contracts, pytest, jsonschema, Ruff, and mypy.
+- Use frozen typed value models internally; persisted evidence remains plain JSON.
+- Keep scenario-specific deterministic scoring in an oracle registry, never in adapters.
+- Reference-adapter modes create normalized observations for benchmark self-tests; they do not emulate or claim real host controls.
+- Store sufficient E0/E1 evidence and identities for deterministic rescoring.
+- Apache-2.0 covers the repository for M1; benchmark/spec-content licensing remains a pre-publication decision.
+
+## Verification evidence
+
+None yet. Commands, exit codes, and test counts will be recorded after D11 and D14.
+
+## Review evidence and findings
+
+Independent review has not started. Findings: none recorded.
+
+## Blockers and completion state
+
+Unresolved blockers: none.
+
+Completion state: IN_PROGRESS. This repository is not MERGE_READY or PUBLIC.
+
