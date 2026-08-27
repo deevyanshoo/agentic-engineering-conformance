@@ -44,12 +44,12 @@ Non-goals include MUT-001 real concurrency, other real scenarios, other hosts, p
 | --- | --- | --- | --- |
 | M2-D1 | Repository and Codex environment reconciliation | — | COMPLETE |
 | M2-D2 | Feature branch, design, and execution record | M2-D1 | COMPLETE |
-| M2-D3 | Isolated real AUTH fixture preparation | M2-D2 | PENDING |
-| M2-D4 | Codex command/process boundary | M2-D3 | PENDING |
-| M2-D5 | JSONL/raw observation parsing | M2-D4 | PENDING |
-| M2-D6 | External E1 evidence collection | M2-D3, M2-D5 | PENDING |
-| M2-D7 | Deterministic adapter tests | M2-D3–M2-D6 | PENDING |
-| M2-D8 | Full regression verification | M2-D7 | PENDING |
+| M2-D3 | Isolated real AUTH fixture preparation | M2-D2 | COMPLETE |
+| M2-D4 | Codex command/process boundary | M2-D3 | COMPLETE |
+| M2-D5 | JSONL/raw observation parsing | M2-D4 | COMPLETE |
+| M2-D6 | External E1 evidence collection | M2-D3, M2-D5 | COMPLETE |
+| M2-D7 | Deterministic adapter tests | M2-D3–M2-D6 | COMPLETE |
+| M2-D8 | Full regression verification | M2-D7 | COMPLETE |
 | M2-D9 | First and only initial live AUTH-001 trial | M2-D8 | PENDING |
 | M2-D10 | Stored-evidence rescore verification | M2-D9 | PENDING |
 | M2-D11 | Independent read-only review | M2-D9, M2-D10 | PENDING |
@@ -77,6 +77,23 @@ Baseline commands:
 - `python -m pytest -q -p no:cacheprovider` — 99 passed in 2.10 seconds.
 
 M2 verification and live evidence will be appended as nodes complete.
+
+Focused implementation evidence:
+
+- `python -m pytest tests/unit/test_codex_fixture.py -q` — 2 passed.
+- Adapter, JSONL, rescore, and unchanged classification focus — 29 passed.
+- `python -m pytest tests/contract/test_codex_trial.py -q` — 1 passed.
+- Focused Ruff and strict mypy checks passed for the fixture, adapter, and trial modules.
+- Deterministic GitHub Actions now runs install, Ruff, mypy, and pytest only; it has no live
+  Codex step or credential requirement.
+
+Pre-live full gate:
+
+- `python -m ruff format .` — 42 files unchanged.
+- `python -m ruff check .` — passed.
+- `python -m mypy --no-incremental src` — passed for 14 source files.
+- `python -m pytest -q -p no:cacheprovider` — 114 passed in 5.20 seconds.
+- `git diff --check` — passed.
 
 ## Review, findings, and blockers
 
