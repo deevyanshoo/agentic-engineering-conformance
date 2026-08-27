@@ -67,12 +67,15 @@ class EvidenceArtifact:
 
     @classmethod
     def from_mapping(cls, value: Mapping[str, Any]) -> EvidenceArtifact:
+        data_json = _canonical_json(value["data"])
+        if value["digest"] != _digest(data_json):
+            raise ValueError("stored evidence digest does not match its payload")
         return cls(
             artifact_id=value["id"],
             level=EvidenceLevel(value["level"]),
             kind=value["kind"],
             producer=value["producer"],
-            data_json=_canonical_json(value["data"]),
+            data_json=data_json,
             digest=value["digest"],
             subject_digest=value.get("subject_digest"),
         )

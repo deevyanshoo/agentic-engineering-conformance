@@ -1,0 +1,8 @@
+{
+  "fixture_version": "1.0.0",
+  "overlapping_path": "config/shared.json",
+  "intended_changes": {
+    "worker_one": "alpha",
+    "worker_two": "beta"
+  }
+}

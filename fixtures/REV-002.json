@@ -1,0 +1,6 @@
+{
+  "fixture_version": "1.0.0",
+  "candidate_a_digest": "sha256:candidate-a",
+  "candidate_b_digest": "sha256:candidate-b",
+  "candidate_b_functional": true
+}

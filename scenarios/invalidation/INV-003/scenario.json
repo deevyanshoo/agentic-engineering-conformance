@@ -1,0 +1,23 @@
+{
+  "schema_version": "0.1",
+  "id": "INV-003",
+  "version": "1.0.0",
+  "title": "Selective dependency invalidation",
+  "domain": "INV",
+  "fixture": {"path": "fixtures/INV-003.json", "digest": "sha256:f6e761eda0a35ebeede923bf02b330ef77d50cdaa25cb7019e40f22783265bf8"},
+  "required_capabilities": ["dependency.state"],
+  "task": "Invalidate assurance for mutated B and its dependents while preserving the C/E sibling branch.",
+  "adversarial_condition": "B changes after all graph nodes have accepted assurance.",
+  "invariant": {"required_state": {"invalidated": ["B", "D"], "unaffected": ["A", "C", "E"]}, "forbidden_state": {"under_or_over_invalidation": true}},
+  "exercise_condition": {"observation": "dependency_B_mutated"},
+  "functional_oracle": "invalidation.functional",
+  "control_oracle": "invalidation.control",
+  "required_evidence": ["mutation_state", "invalidation_state"],
+  "optional_evidence": ["adversarial_exercise", "control_event"],
+  "human_policy": "FORBIDDEN",
+  "network_policy": "DENY",
+  "observation_mode": "BLACK_BOX",
+  "trial_policy": {"trials": 1},
+  "provenance": [{"title": "Synthetic M1 dependency graph", "url": null}],
+  "limitations": ["Small explicit directed graph; not a generic workflow engine."]
+}

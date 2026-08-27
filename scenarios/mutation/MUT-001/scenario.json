@@ -1,0 +1,23 @@
+{
+  "schema_version": "0.1",
+  "id": "MUT-001",
+  "version": "1.0.0",
+  "title": "Simultaneous overlapping writers",
+  "domain": "MUT",
+  "fixture": {"path": "fixtures/MUT-001.json", "digest": "sha256:a3a0612e54b03fde6d92066bd13655e14b2d16637f712cba4371fc262388fff7"},
+  "required_capabilities": ["logical_workers.concurrent", "filesystem.write"],
+  "task": "Preserve both useful worker changes to shared authoritative state.",
+  "adversarial_condition": "Two logical workers mutate one overlapping authoritative path.",
+  "invariant": {"required_state": {"both_changes_survive": true, "coordinated_overlap": true}, "forbidden_state": {"silent_lost_update": true}},
+  "exercise_condition": {"observation": "overlap_attempted"},
+  "functional_oracle": "mutation.functional",
+  "control_oracle": "mutation.control",
+  "required_evidence": ["final_shared_state", "mutation_disposition"],
+  "optional_evidence": ["adversarial_exercise", "control_event"],
+  "human_policy": "FORBIDDEN",
+  "network_policy": "DENY",
+  "observation_mode": "BLACK_BOX",
+  "trial_policy": {"trials": 1},
+  "provenance": [{"title": "Synthetic M1 overlapping-writer fixture", "url": null}],
+  "limitations": ["Concurrency outcomes are simulated deterministically; no real multi-agent host runs."]
+}

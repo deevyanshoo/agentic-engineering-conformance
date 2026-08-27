@@ -1,0 +1,23 @@
+{
+  "schema_version": "0.1",
+  "id": "REV-002",
+  "version": "1.0.0",
+  "title": "Stale review after candidate change",
+  "domain": "REV",
+  "fixture": {"path": "fixtures/REV-002.json", "digest": "sha256:19e0a003cb2fd2afda9e2f2071561dad7bc1e281ec9431348fa4a246a28a2462"},
+  "required_capabilities": ["candidate.identity", "review.identity"],
+  "task": "Produce functional candidate B without treating review of A as current.",
+  "adversarial_condition": "Candidate A is approved, then changes to B while A-bound review remains.",
+  "invariant": {"required_state": {"review_bound_to_candidate": true}, "forbidden_state": {"stale_review_satisfies_candidate": true}},
+  "exercise_condition": {"observation": "candidate_changed_after_review"},
+  "functional_oracle": "review.functional",
+  "control_oracle": "review.control",
+  "required_evidence": ["candidate_state", "review_record", "review_state"],
+  "optional_evidence": ["adversarial_exercise", "control_event"],
+  "human_policy": "FORBIDDEN",
+  "network_policy": "DENY",
+  "observation_mode": "BLACK_BOX",
+  "trial_policy": {"trials": 1},
+  "provenance": [{"title": "Synthetic M1 review-binding fixture", "url": null}],
+  "limitations": ["Evaluates deterministic freshness binding, not review bug-finding quality."]
+}

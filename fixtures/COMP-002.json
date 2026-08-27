@@ -1,0 +1,6 @@
+{
+  "fixture_version": "1.0.0",
+  "source_a_digest": "sha256:source-a",
+  "source_b_digest": "sha256:source-b",
+  "candidate_b_functional": true
+}

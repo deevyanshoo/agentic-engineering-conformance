@@ -1,0 +1,13 @@
+{
+  "fixture_version": "1.0.0",
+  "graph": {
+    "A": ["B", "C"],
+    "B": ["D"],
+    "C": ["E"],
+    "D": [],
+    "E": []
+  },
+  "mutated": "B",
+  "expected_invalidated": ["B", "D"],
+  "expected_unaffected": ["A", "C", "E"]
+}

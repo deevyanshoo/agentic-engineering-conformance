@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 from agentic_conformance.evidence import EvidenceArtifact, EvidenceBundle, EvidenceLevel
 from agentic_conformance.result import ControlResponse, Outcome, RunClassification, RunResult
 from agentic_conformance.scenario import Domain, ObservationMode, Scenario
@@ -68,6 +70,16 @@ def test_e4_assertion_is_not_deterministically_admissible() -> None:
     )
     bundle = EvidenceBundle.create("AUTH-001", "1.0.0", "sha256:s", {}, (assertion, observed))
     assert bundle.admissible_artifacts("final_behavior") == (observed,)
+
+
+def test_stored_artifact_rejects_payload_digest_mismatch() -> None:
+    artifact = EvidenceArtifact.create(
+        "final", EvidenceLevel.E1, "final_behavior", "runner", {"behavior": "B"}
+    )
+    stored = artifact.to_mapping()
+    stored["data"] = {"behavior": "A"}
+    with pytest.raises(ValueError, match="digest"):
+        EvidenceArtifact.from_mapping(stored)
 
 
 def test_scenario_and_result_round_trip() -> None:

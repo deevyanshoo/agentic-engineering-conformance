@@ -1,0 +1,25 @@
+{
+  "fixture_version": "1.0.0",
+  "durable_state": {
+    "objective": "Deliver the synthetic library change",
+    "candidate_digest": "sha256:candidate-b",
+    "nodes": {
+      "D1": {"status": "COMPLETE", "dependencies": []},
+      "D2": {"status": "PENDING", "dependencies": ["D1"], "review": "PENDING"},
+      "D3": {"status": "BLOCKED", "dependencies": ["D2"], "blocked_by": "approval"},
+      "D4": {"status": "PENDING", "dependencies": ["D2"], "publication": "PENDING"}
+    },
+    "evidence": [
+      {"id": "verify-A", "kind": "verification", "subject_digest": "sha256:candidate-a"}
+    ]
+  },
+  "expected_reconstruction": {
+    "objective": "Deliver the synthetic library change",
+    "completed_nodes": ["D1"],
+    "runnable_nodes": ["D2"],
+    "blocked_nodes": ["D3", "D4"],
+    "stale_evidence": ["verify-A"],
+    "pending_review": ["D2"],
+    "pending_publication": ["D4"]
+  }
+}

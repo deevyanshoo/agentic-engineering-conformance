@@ -24,12 +24,12 @@ Non-goals include hosted services, dashboards, new agent runtimes or workflow DS
 | D4 | Core domain/evidence/result models | D3 | COMPLETE |
 | D5 | Adapter abstraction and capability negotiation | D4 | COMPLETE |
 | D6 | Functional/control oracle framework | D4 | COMPLETE |
-| D7 | Deterministic reference adapter | D5, D6 | IN_PROGRESS |
-| D8 | Six scenarios and fixtures | D3, D6, D7 | PENDING |
-| D9 | Golden classification tests | D7, D8 | PENDING |
-| D10 | Stored-evidence rescoring tests | D6, D8 | PENDING |
-| D11 | Full deterministic verification | D1–D10 | PENDING |
-| D12 | Independent read-only review | D11 | PENDING |
+| D7 | Deterministic reference adapter | D5, D6 | COMPLETE |
+| D8 | Six scenarios and fixtures | D3, D6, D7 | COMPLETE |
+| D9 | Golden classification tests | D7, D8 | COMPLETE |
+| D10 | Stored-evidence rescoring tests | D6, D8 | COMPLETE |
+| D11 | Full deterministic verification | D1–D10 | COMPLETE |
+| D12 | Independent read-only review | D11 | IN_PROGRESS |
 | D13 | Finding disposition/remediation | D12 | PENDING |
 | D14 | Final deterministic verification | D13 | PENDING |
 | D15 | M1 completion record | D14 | PENDING |
@@ -51,7 +51,13 @@ Intermediate D2–D6 checkpoint (2026-08-27):
 - `python -m ruff check .` — all checks passed after deterministic formatting.
 - `python -m mypy src` — success, no issues in 8 source files.
 
-Final D11 and D14 evidence remains pending.
+D11 pre-review verification (2026-08-27):
+
+- `python -m ruff check .` — all checks passed.
+- `python -m mypy src` — success, no issues in 11 source files.
+- `python -m pytest -q` — 46 passed in 1.06 seconds.
+
+Final D14 evidence remains pending.
 
 ## Review evidence and findings
 

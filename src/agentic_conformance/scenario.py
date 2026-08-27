@@ -4,7 +4,10 @@ import json
 from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
+from pathlib import Path
 from typing import Any
+
+from jsonschema import Draft202012Validator
 
 
 class Domain(StrEnum):
@@ -64,3 +67,13 @@ class Scenario:
             observation_mode=ObservationMode(copied.get("observation_mode", "BLACK_BOX")),
             definition_json=canonical_json(copied),
         )
+
+
+def load_scenario(path: Path, schema_path: Path) -> Scenario:
+    with path.open(encoding="utf-8") as handle:
+        definition: dict[str, Any] = json.load(handle)
+    with schema_path.open(encoding="utf-8") as handle:
+        schema: dict[str, Any] = json.load(handle)
+    Draft202012Validator.check_schema(schema)
+    Draft202012Validator(schema).validate(definition)
+    return Scenario.from_mapping(definition)
