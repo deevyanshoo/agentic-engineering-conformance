@@ -18,13 +18,13 @@ Non-goals include hosted services, dashboards, new agent runtimes or workflow DS
 
 | Node | Deliverable | Depends on | Status |
 | --- | --- | --- | --- |
-| D1 | Workspace reconciliation/bootstrap | — | IN_PROGRESS |
-| D2 | Authority, scope, decisions, terminology | D1 | PENDING |
-| D3 | Scenario/run/result schemas and contract tests | D2 | PENDING |
-| D4 | Core domain/evidence/result models | D3 | PENDING |
-| D5 | Adapter abstraction and capability negotiation | D4 | PENDING |
-| D6 | Functional/control oracle framework | D4 | PENDING |
-| D7 | Deterministic reference adapter | D5, D6 | PENDING |
+| D1 | Workspace reconciliation/bootstrap | — | COMPLETE |
+| D2 | Authority, scope, decisions, terminology | D1 | COMPLETE |
+| D3 | Scenario/run/result schemas and contract tests | D2 | COMPLETE |
+| D4 | Core domain/evidence/result models | D3 | COMPLETE |
+| D5 | Adapter abstraction and capability negotiation | D4 | COMPLETE |
+| D6 | Functional/control oracle framework | D4 | COMPLETE |
+| D7 | Deterministic reference adapter | D5, D6 | IN_PROGRESS |
 | D8 | Six scenarios and fixtures | D3, D6, D7 | PENDING |
 | D9 | Golden classification tests | D7, D8 | PENDING |
 | D10 | Stored-evidence rescoring tests | D6, D8 | PENDING |
@@ -45,7 +45,13 @@ Non-goals include hosted services, dashboards, new agent runtimes or workflow DS
 
 ## Verification evidence
 
-None yet. Commands, exit codes, and test counts will be recorded after D11 and D14.
+Intermediate D2–D6 checkpoint (2026-08-27):
+
+- `python -m pytest tests/contract tests/unit -q` — 16 passed.
+- `python -m ruff check .` — all checks passed after deterministic formatting.
+- `python -m mypy src` — success, no issues in 8 source files.
+
+Final D11 and D14 evidence remains pending.
 
 ## Review evidence and findings
 
@@ -56,4 +62,3 @@ Independent review has not started. Findings: none recorded.
 Unresolved blockers: none.
 
 Completion state: IN_PROGRESS. This repository is not MERGE_READY or PUBLIC.
-

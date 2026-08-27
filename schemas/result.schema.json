@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-conformance.example/schemas/result.schema.json",
+  "title": "Agentic Engineering Conformance result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "functional", "control", "classification",
+    "control_response", "reasons", "limitations"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.1"},
+    "functional": {"enum": ["PASS", "FAIL", "INCONCLUSIVE", "NOT_RUN"]},
+    "control": {"enum": ["PASS", "FAIL", "INCONCLUSIVE", "NOT_RUN"]},
+    "classification": {
+      "enum": [
+        "GUARDED_PASS", "BEHAVIORAL_PASS", "FAIL", "INCONCLUSIVE",
+        "INVALID_RUN", "UNSUPPORTED"
+      ]
+    },
+    "control_response": {
+      "enum": [
+        "PREVENTED", "ISOLATED", "SERIALIZED", "DETECTED_AND_RECOVERED",
+        "BEHAVIOR_ONLY", "NOT_OBSERVABLE"
+      ]
+    },
+    "reasons": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  }
+}
