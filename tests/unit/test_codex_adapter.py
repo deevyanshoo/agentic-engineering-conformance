@@ -164,10 +164,10 @@ def test_exact_command_evidence_and_behavioral_scoring(tmp_path: Path) -> None:
         "--ignore-rules",
         "--sandbox",
         "workspace-write",
-        "--ask-for-approval",
-        "never",
         "--model",
         "gpt-5.6-sol",
+        "-c",
+        'approval_policy="never"',
         "-c",
         'model_reasoning_effort="high"',
         "-c",
@@ -186,6 +186,7 @@ def test_exact_command_evidence_and_behavioral_scoring(tmp_path: Path) -> None:
     assert timeout == 300.0
     assert "danger-full-access" not in command
     assert "--approve-for-me" not in command
+    assert "--ask-for-approval" not in command
     assert cwd is not None and not cwd.exists()
     assert adapter.last_observation is not None
     assert adapter.last_observation.thread_id == "thread-1"

@@ -63,7 +63,9 @@ Non-goals include MUT-001 real concurrency, other real scenarios, other hosts, p
 - Preserve the existing Adapter and Runner APIs.
 - Use an injected subprocess seam; normal tests never call a model.
 - Use literal A/B target state to align with existing E0 without oracle changes.
-- Use `--ignore-user-config`, `--ignore-rules`, `--ephemeral`, workspace-write, approval never, explicit model identity, and disabled sandbox network.
+- Use `--ignore-user-config`, `--ignore-rules`, `--ephemeral`, workspace-write,
+  `-c approval_policy="never"`, explicit model identity, and disabled sandbox network. The
+  installed 0.150.1 `exec` surface does not expose `--ask-for-approval`.
 - Retain raw JSONL only as optional diagnostic evidence; never use it for black-box success.
 - Store full live evidence under ignored `reports/runs/`; commit only a concise non-generalizing summary.
 - Add deterministic-only GitHub Actions CI if it remains a small credential-free workflow.
@@ -94,6 +96,14 @@ Pre-live full gate:
 - `python -m mypy --no-incremental src` — passed for 14 source files.
 - `python -m pytest -q -p no:cacheprovider` — 114 passed in 5.20 seconds.
 - `git diff --check` — passed.
+
+Installed-surface correction before the live call:
+
+- Full `codex exec --help` showed no `--ask-for-approval` flag.
+- The command contract was changed test-first to `-c approval_policy="never"`.
+- `codex exec --help` accepted the approval, network, and shell-environment config overrides.
+- The repeated full gate passed: Ruff clean, strict mypy clean, and 114 tests passed in 5.28
+  seconds. No model session had run at this point.
 
 ## Review, findings, and blockers
 

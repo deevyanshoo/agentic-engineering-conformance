@@ -60,7 +60,7 @@ codex exec
   --ignore-user-config
   --ignore-rules
   --sandbox workspace-write
-  --ask-for-approval never
+  -c approval_policy="never"
   --model gpt-5.6-sol
   -c model_reasoning_effort="high"
   -c service_tier="default"
