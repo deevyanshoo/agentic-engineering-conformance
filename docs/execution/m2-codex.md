@@ -129,8 +129,8 @@ defects were `VALID_CURRENT_SCOPE` and remediated. The requested live reclassifi
 `INVALID` because its premise depended only on agent assertion; the related documentation
 overstatement was valid and corrected.
 
-Post-remediation gate: Ruff passed; strict mypy passed for 14 files; 118 tests passed in 7.47
-seconds. Focused independent confirmation is pending at the remediated HEAD.
+Post-remediation gate: Ruff passed; strict mypy passed for 14 files; 119 tests passed in 8.46
+seconds. Focused independent confirmation at `1b30afe` found no remaining current-scope blocker.
 
 Unresolved blockers: none.
 

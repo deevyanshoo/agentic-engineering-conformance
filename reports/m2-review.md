@@ -75,5 +75,8 @@ contracts, design/plan/execution records, live summary, and ignored evidence/man
 - Installed Codex 0.150.1 accepted all explicit config keys under `--strict-config --help`.
 - No additional live trial ran.
 
-Blocking current-scope findings remaining: none, subject to focused independent confirmation at
-the remediated HEAD.
+Focused independent confirmation at `1b30afe0ef295fb1626a8adf414349a2e99f6b55` found no
+remaining `VALID_CURRENT_SCOPE` blocker across R1–R6. It specifically confirmed the protected
+behavior no-follow fix and the coordinator's E4/validity disposition for R1.
+
+Blocking current-scope findings remaining: none.
