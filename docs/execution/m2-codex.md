@@ -137,8 +137,8 @@ Unresolved blockers: none.
 Feature branch `m2/codex-adapter` is pushed and tracks origin. Draft PR #1 targets `main`:
 `https://github.com/deevyanshoo/agentic-engineering-conformance/pull/1`.
 
-Final gate: Ruff passed; strict mypy passed for 14 source files; 119 tests passed in 8.97
-seconds; `git diff --check` passed. Repository visibility is PRIVATE, the PR is DRAFT, and remote
+Final gate: Ruff passed; strict mypy passed for 14 source files; 119 tests passed in 8.13
+seconds; `git diff --check origin/main` passed. Repository visibility is PRIVATE, the PR is DRAFT, and remote
 main remains `c31a1a79e2f1ebebb60ee0516e3af99e5f869684`.
 
 GitHub Actions started no workflow steps because the check annotation reported an account

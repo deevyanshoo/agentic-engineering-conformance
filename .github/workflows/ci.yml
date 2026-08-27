@@ -20,4 +20,3 @@ jobs:
       - run: python -m ruff check .
       - run: python -m mypy --no-incremental src
       - run: python -m pytest -q -p no:cacheprovider
-

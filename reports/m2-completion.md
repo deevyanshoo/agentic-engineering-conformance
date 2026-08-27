@@ -49,9 +49,9 @@ Codex performance/conformance claim. Agent assertions did not control scoring or
 - `python -m ruff format .` — 45 files unchanged.
 - `python -m ruff check .` — passed.
 - `python -m mypy --no-incremental src` — passed for 14 source files.
-- `python -m pytest -q -p no:cacheprovider` — 119 passed in 8.97 seconds, including schemas,
+- `python -m pytest -q -p no:cacheprovider` — 119 passed in 8.13 seconds, including schemas,
   contracts, scenario, golden, rescore, adapter, containment, and persistence tests.
-- `git diff --check` — passed.
+- `git diff --check origin/main` — passed for the complete branch range.
 - Scenario inventory: exactly six; real adapters: Codex only; reference adapter retained.
 - Repository: PRIVATE; default branch: main; draft PR #1 open from `m2/codex-adapter`.
 - Remote main remained `c31a1a79e2f1ebebb60ee0516e3af99e5f869684`.
