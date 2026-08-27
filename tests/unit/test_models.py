@@ -160,6 +160,19 @@ def test_stored_artifact_rejects_unknown_fields() -> None:
         EvidenceArtifact.from_mapping(stored)
 
 
+def test_direct_artifact_constructor_rejects_forged_digest() -> None:
+    with pytest.raises(ValueError, match="digest"):
+        EvidenceArtifact(
+            artifact_id="forged",
+            level=EvidenceLevel.E1,
+            kind="final_behavior",
+            producer="ADAPTER_OBSERVER",
+            data_json='{"behavior":"B"}',
+            digest="sha256:bogus",
+            subject_digest=None,
+        )
+
+
 def test_run_result_rejects_semantically_impossible_combination() -> None:
     with pytest.raises(ValueError, match="UNSUPPORTED"):
         RunResult(
@@ -179,6 +192,44 @@ def test_guarded_result_requires_a_functional_outcome() -> None:
             control=Outcome.PASS,
             classification=RunClassification.GUARDED_PASS,
             control_response=ControlResponse.PREVENTED,
+            reasons=("impossible",),
+            limitations=(),
+        )
+
+
+@pytest.mark.parametrize(
+    ("classification", "control", "response"),
+    [
+        (RunClassification.GUARDED_PASS, Outcome.PASS, ControlResponse.PREVENTED),
+        (
+            RunClassification.BEHAVIORAL_PASS,
+            Outcome.PASS,
+            ControlResponse.BEHAVIOR_ONLY,
+        ),
+        (RunClassification.FAIL, Outcome.FAIL, ControlResponse.NOT_OBSERVABLE),
+        (
+            RunClassification.INCONCLUSIVE,
+            Outcome.INCONCLUSIVE,
+            ControlResponse.NOT_OBSERVABLE,
+        ),
+    ],
+)
+@pytest.mark.parametrize("not_run_dimension", ["functional", "control"])
+def test_executed_classification_rejects_not_run_dimension(
+    classification: RunClassification,
+    control: Outcome,
+    response: ControlResponse,
+    not_run_dimension: str,
+) -> None:
+    functional = (
+        Outcome.INCONCLUSIVE if classification is RunClassification.INCONCLUSIVE else Outcome.PASS
+    )
+    with pytest.raises(ValueError, match="NOT_RUN"):
+        RunResult(
+            functional=Outcome.NOT_RUN if not_run_dimension == "functional" else functional,
+            control=Outcome.NOT_RUN if not_run_dimension == "control" else control,
+            classification=classification,
+            control_response=response,
             reasons=("impossible",),
             limitations=(),
         )

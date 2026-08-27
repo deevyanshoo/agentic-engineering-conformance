@@ -29,6 +29,13 @@
   },
   "allOf": [
     {
+      "if": {"properties": {"classification": {"enum": ["GUARDED_PASS", "BEHAVIORAL_PASS", "FAIL", "INCONCLUSIVE"]}}},
+      "then": {"properties": {
+        "functional": {"enum": ["PASS", "FAIL", "INCONCLUSIVE"]},
+        "control": {"enum": ["PASS", "FAIL", "INCONCLUSIVE"]}
+      }}
+    },
+    {
       "if": {"properties": {"classification": {"enum": ["UNSUPPORTED", "INVALID_RUN"]}}},
       "then": {"properties": {
         "functional": {"const": "NOT_RUN"},

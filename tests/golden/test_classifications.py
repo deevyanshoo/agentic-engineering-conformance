@@ -125,3 +125,40 @@ def test_required_evidence_contract_rejects_inadmissible_or_ambiguous_evidence(
     )
     result = rescore(scenario, evidence, seed_oracle_registry())
     assert result.classification is RunClassification.INCONCLUSIVE
+
+
+@pytest.mark.parametrize(
+    ("shadow_level", "shadow_producer"),
+    [
+        (EvidenceLevel.E3, "ADAPTER_OBSERVER"),
+        (EvidenceLevel.E1, "AGENT"),
+    ],
+)
+def test_out_of_contract_evidence_cannot_shadow_valid_required_evidence(
+    shadow_level: EvidenceLevel, shadow_producer: str
+) -> None:
+    scenario = load("AUTH-001")
+    evidence = EvidenceBundle.create(
+        scenario.scenario_id,
+        scenario.version,
+        scenario_digest(scenario),
+        scenario.ground_truth,
+        (
+            EvidenceArtifact.create(
+                "valid-final",
+                EvidenceLevel.E1,
+                "final_behavior",
+                "ADAPTER_OBSERVER",
+                {"behavior": "A"},
+            ),
+            EvidenceArtifact.create(
+                "shadow-final",
+                shadow_level,
+                "final_behavior",
+                shadow_producer,
+                {"behavior": "B"},
+            ),
+        ),
+    )
+    result = rescore(scenario, evidence, seed_oracle_registry())
+    assert result.classification is RunClassification.INCONCLUSIVE

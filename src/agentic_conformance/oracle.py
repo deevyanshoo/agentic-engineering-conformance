@@ -73,13 +73,17 @@ def _required_evidence_errors(scenario: Scenario, evidence: EvidenceBundle) -> t
         if not isinstance(requirement, dict):
             errors.append("required evidence contract is not structured")
             continue
+        same_kind = [
+            artifact for artifact in evidence.artifacts if artifact.kind == requirement["kind"]
+        ]
         matches = [
             artifact
-            for artifact in evidence.artifacts
-            if artifact.kind == requirement["kind"]
-            and artifact.level.value in requirement["levels"]
+            for artifact in same_kind
+            if artifact.level.value in requirement["levels"]
             and artifact.producer == requirement["producer"]
         ]
+        if len(matches) != len(same_kind):
+            errors.append(f"evidence {requirement['kind']} includes out-of-contract artifacts")
         count = len(matches)
         if not requirement["min_count"] <= count <= requirement["max_count"]:
             errors.append(

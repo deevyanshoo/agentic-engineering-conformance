@@ -61,7 +61,7 @@ Final D14 evidence remains pending.
 
 ## Review evidence and findings
 
-Independent read-only review completed against `6beb272..9012861`. The reviewer independently observed 46 passing tests and reported nine findings. All are dispositioned `VALID_CURRENT_SCOPE` in `reports/m1-review.md`; all nine have regression-tested remediations. Independent follow-up review is pending. No finding is deferred.
+Independent read-only review completed against `6beb272..9012861`. The reviewer independently observed 46 passing tests and reported nine findings. All are dispositioned `VALID_CURRENT_SCOPE` in `reports/m1-review.md`; none is deferred. A focused follow-up against `ad3b367` confirmed six resolved and identified incomplete closure for R2, R4, and R9. Those gaps were reproduced and remediated with constructor-integrity, evidence-shadowing, and reverse-`NOT_RUN` regressions. Final independent confirmation is pending.
 
 ## Blockers and completion state
 

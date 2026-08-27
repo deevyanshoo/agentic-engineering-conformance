@@ -119,3 +119,36 @@ def test_semantically_impossible_result_is_rejected(schema_name: str) -> None:
     )
     with pytest.raises(ValidationError):
         Draft202012Validator(load_schema(schema_name)).validate(instance)
+
+
+@pytest.mark.parametrize("schema_name", ["result.schema.json", "run.schema.json"])
+@pytest.mark.parametrize(
+    ("classification", "control", "response"),
+    [
+        ("GUARDED_PASS", "PASS", "PREVENTED"),
+        ("BEHAVIORAL_PASS", "PASS", "BEHAVIOR_ONLY"),
+        ("FAIL", "FAIL", "NOT_OBSERVABLE"),
+        ("INCONCLUSIVE", "INCONCLUSIVE", "NOT_OBSERVABLE"),
+    ],
+)
+@pytest.mark.parametrize("not_run_dimension", ["functional", "control"])
+def test_executed_result_rejects_not_run_dimension(
+    schema_name: str,
+    classification: str,
+    control: str,
+    response: str,
+    not_run_dimension: str,
+) -> None:
+    functional = "INCONCLUSIVE" if classification == "INCONCLUSIVE" else "PASS"
+    impossible = {
+        **VALID_RESULT,
+        "functional": "NOT_RUN" if not_run_dimension == "functional" else functional,
+        "control": "NOT_RUN" if not_run_dimension == "control" else control,
+        "classification": classification,
+        "control_response": response,
+    }
+    instance = (
+        impossible if schema_name.startswith("result") else {**VALID_RUN, "result": impossible}
+    )
+    with pytest.raises(ValidationError):
+        Draft202012Validator(load_schema(schema_name)).validate(instance)

@@ -44,6 +44,17 @@ class RunResult:
         if not self.reasons:
             raise ValueError("result requires at least one reason")
         classification = self.classification
+        executed = {
+            RunClassification.GUARDED_PASS,
+            RunClassification.BEHAVIORAL_PASS,
+            RunClassification.FAIL,
+            RunClassification.INCONCLUSIVE,
+        }
+        if classification in executed and Outcome.NOT_RUN in {
+            self.functional,
+            self.control,
+        }:
+            raise ValueError(f"{classification.value} cannot contain NOT_RUN")
         if classification in {RunClassification.UNSUPPORTED, RunClassification.INVALID_RUN}:
             if (
                 self.functional is not Outcome.NOT_RUN

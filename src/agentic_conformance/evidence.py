@@ -53,6 +53,27 @@ class EvidenceArtifact:
     digest: str
     subject_digest: str | None = None
 
+    def __post_init__(self) -> None:
+        try:
+            data = json.loads(self.data_json)
+        except json.JSONDecodeError as exc:
+            raise ValueError("evidence artifact data must be valid JSON") from exc
+        if not isinstance(data, dict):
+            raise ValueError("evidence artifact data must be a JSON object")
+        canonical_data = _canonical_json(data)
+        if canonical_data != self.data_json:
+            raise ValueError("evidence artifact data must use canonical JSON")
+        expected_digest = _artifact_digest(
+            self.artifact_id,
+            self.level,
+            self.kind,
+            self.producer,
+            self.data_json,
+            self.subject_digest,
+        )
+        if self.digest != expected_digest:
+            raise ValueError("evidence artifact digest does not match its envelope")
+
     @property
     def data(self) -> dict[str, Any]:
         value: dict[str, Any] = json.loads(self.data_json)
