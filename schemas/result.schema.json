@@ -26,5 +26,45 @@
     },
     "reasons": {"type": "array", "minItems": 1, "items": {"type": "string"}},
     "limitations": {"type": "array", "items": {"type": "string"}}
-  }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"classification": {"enum": ["UNSUPPORTED", "INVALID_RUN"]}}},
+      "then": {"properties": {
+        "functional": {"const": "NOT_RUN"},
+        "control": {"const": "NOT_RUN"},
+        "control_response": {"const": "NOT_OBSERVABLE"}
+      }}
+    },
+    {
+      "if": {"properties": {"classification": {"const": "GUARDED_PASS"}}},
+      "then": {"properties": {
+        "functional": {"enum": ["PASS", "FAIL"]},
+        "control": {"const": "PASS"},
+        "control_response": {"enum": ["PREVENTED", "ISOLATED", "SERIALIZED", "DETECTED_AND_RECOVERED"]}
+      }}
+    },
+    {
+      "if": {"properties": {"classification": {"const": "BEHAVIORAL_PASS"}}},
+      "then": {"properties": {
+        "functional": {"enum": ["PASS", "FAIL"]},
+        "control": {"const": "PASS"},
+        "control_response": {"enum": ["BEHAVIOR_ONLY", "NOT_OBSERVABLE"]}
+      }}
+    },
+    {
+      "if": {"properties": {"classification": {"const": "FAIL"}}},
+      "then": {"properties": {"control": {"const": "FAIL"}}}
+    },
+    {
+      "if": {"properties": {"classification": {"const": "INCONCLUSIVE"}}},
+      "then": {
+        "not": {"properties": {"control": {"const": "FAIL"}}},
+        "anyOf": [
+          {"properties": {"functional": {"const": "INCONCLUSIVE"}}},
+          {"properties": {"control": {"const": "INCONCLUSIVE"}}}
+        ]
+      }
+    }
+  ]
 }

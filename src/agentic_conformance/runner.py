@@ -37,10 +37,14 @@ class Runner:
     def run(self, scenario: Scenario, adapter: Adapter) -> RunRecord:
         try:
             capabilities = adapter.probe()
+            if not isinstance(capabilities, frozenset) or any(
+                not isinstance(capability, str) or not capability for capability in capabilities
+            ):
+                raise TypeError("adapter probe must return frozenset[str]")
+            missing = tuple(sorted(scenario.required_capabilities - capabilities))
         except Exception as error:
             return RunRecord(_invalid_result(error), None, False, adapter_error=_error_text(error))
 
-        missing = tuple(sorted(scenario.required_capabilities - capabilities))
         if missing:
             return RunRecord(
                 _unsupported_result(missing), None, False, missing_capabilities=missing
@@ -55,7 +59,15 @@ class Runner:
             prepared = adapter.prepare(scenario)
             executed = True
             adapter.execute(prepared)
-            evidence = adapter.collect(prepared)
+            collected = adapter.collect(prepared)
+            evidence = EvidenceBundle.create(
+                scenario.scenario_id,
+                scenario.version,
+                scenario_digest(scenario),
+                scenario.ground_truth,
+                collected.artifacts,
+                collected.limitations,
+            )
             _validate_binding(scenario, evidence)
             result = self._oracles.score(scenario, evidence)
         except Exception as error:
@@ -86,6 +98,8 @@ def _validate_binding(scenario: Scenario, evidence: EvidenceBundle) -> None:
         raise ValueError("evidence scenario version does not match")
     if evidence.scenario_digest != scenario_digest(scenario):
         raise ValueError("evidence scenario digest does not match")
+    if evidence.ground_truth != scenario.ground_truth:
+        raise ValueError("evidence ground truth does not match benchmark fixture")
 
 
 def _unsupported_result(missing: tuple[str, ...]) -> RunResult:

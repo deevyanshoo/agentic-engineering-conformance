@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -39,10 +40,16 @@ class Scenario:
     control_oracle: str
     observation_mode: ObservationMode
     definition_json: str
+    ground_truth_json: str
 
     @property
     def definition(self) -> dict[str, Any]:
         value: dict[str, Any] = json.loads(self.definition_json)
+        return value
+
+    @property
+    def ground_truth(self) -> dict[str, Any]:
+        value: dict[str, Any] = json.loads(self.ground_truth_json)
         return value
 
     def to_json(self) -> str:
@@ -54,7 +61,9 @@ class Scenario:
         return cls.from_mapping(raw)
 
     @classmethod
-    def from_mapping(cls, value: Mapping[str, Any]) -> Scenario:
+    def from_mapping(
+        cls, value: Mapping[str, Any], ground_truth: Mapping[str, Any] | None = None
+    ) -> Scenario:
         copied: dict[str, Any] = json.loads(canonical_json(value))
         return cls(
             scenario_id=copied["id"],
@@ -66,6 +75,7 @@ class Scenario:
             control_oracle=copied["control_oracle"],
             observation_mode=ObservationMode(copied.get("observation_mode", "BLACK_BOX")),
             definition_json=canonical_json(copied),
+            ground_truth_json=canonical_json(ground_truth or {}),
         )
 
 
@@ -76,4 +86,11 @@ def load_scenario(path: Path, schema_path: Path) -> Scenario:
         schema: dict[str, Any] = json.load(handle)
     Draft202012Validator.check_schema(schema)
     Draft202012Validator(schema).validate(definition)
-    return Scenario.from_mapping(definition)
+    fixture_contract = definition["fixture"]
+    fixture_path = schema_path.parent.parent / fixture_contract["path"]
+    fixture_bytes = fixture_path.read_bytes()
+    fixture_digest = f"sha256:{hashlib.sha256(fixture_bytes).hexdigest()}"
+    if fixture_digest != fixture_contract["digest"]:
+        raise ValueError("fixture digest does not match scenario binding")
+    ground_truth: dict[str, Any] = json.loads(fixture_bytes)
+    return Scenario.from_mapping(definition, ground_truth)

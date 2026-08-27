@@ -24,6 +24,25 @@ def _digest(value: str) -> str:
     return f"sha256:{hashlib.sha256(value.encode()).hexdigest()}"
 
 
+def _artifact_digest(
+    artifact_id: str,
+    level: EvidenceLevel,
+    kind: str,
+    producer: str,
+    data_json: str,
+    subject_digest: str | None,
+) -> str:
+    envelope = {
+        "id": artifact_id,
+        "level": level.value,
+        "kind": kind,
+        "producer": producer,
+        "data": json.loads(data_json),
+        "subject_digest": subject_digest,
+    }
+    return _digest(_canonical_json(envelope))
+
+
 @dataclass(frozen=True, slots=True)
 class EvidenceArtifact:
     artifact_id: str
@@ -50,9 +69,8 @@ class EvidenceArtifact:
         subject_digest: str | None = None,
     ) -> EvidenceArtifact:
         data_json = _canonical_json(data)
-        return cls(
-            artifact_id, level, kind, producer, data_json, _digest(data_json), subject_digest
-        )
+        digest = _artifact_digest(artifact_id, level, kind, producer, data_json, subject_digest)
+        return cls(artifact_id, level, kind, producer, data_json, digest, subject_digest)
 
     def to_mapping(self) -> dict[str, Any]:
         return {
@@ -67,12 +85,32 @@ class EvidenceArtifact:
 
     @classmethod
     def from_mapping(cls, value: Mapping[str, Any]) -> EvidenceArtifact:
+        expected_fields = {
+            "id",
+            "level",
+            "kind",
+            "producer",
+            "data",
+            "digest",
+            "subject_digest",
+        }
+        if set(value) != expected_fields:
+            raise ValueError("stored evidence artifact fields are incompatible")
         data_json = _canonical_json(value["data"])
-        if value["digest"] != _digest(data_json):
+        level = EvidenceLevel(value["level"])
+        expected_digest = _artifact_digest(
+            value["id"],
+            level,
+            value["kind"],
+            value["producer"],
+            data_json,
+            value.get("subject_digest"),
+        )
+        if value["digest"] != expected_digest:
             raise ValueError("stored evidence digest does not match its payload")
         return cls(
             artifact_id=value["id"],
-            level=EvidenceLevel(value["level"]),
+            level=level,
             kind=value["kind"],
             producer=value["producer"],
             data_json=data_json,
@@ -141,7 +179,27 @@ class EvidenceBundle:
 
     @classmethod
     def from_json(cls, value: str) -> EvidenceBundle:
-        raw: dict[str, Any] = json.loads(value)
+        parsed: Any = json.loads(value)
+        expected_fields = {
+            "schema_version",
+            "scenario_id",
+            "scenario_version",
+            "scenario_digest",
+            "ground_truth",
+            "artifacts",
+            "limitations",
+        }
+        if not isinstance(parsed, dict) or set(parsed) != expected_fields:
+            raise ValueError("stored evidence fields are incompatible")
+        raw: dict[str, Any] = parsed
+        if raw["schema_version"] != "0.1":
+            raise ValueError("stored evidence schema version is unsupported")
+        if (
+            not isinstance(raw["ground_truth"], dict)
+            or not isinstance(raw["artifacts"], list)
+            or not isinstance(raw["limitations"], list)
+        ):
+            raise ValueError("stored evidence field types are incompatible")
         return cls.create(
             scenario_id=raw["scenario_id"],
             scenario_version=raw["scenario_version"],

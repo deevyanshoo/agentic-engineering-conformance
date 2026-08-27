@@ -9,7 +9,6 @@ from agentic_conformance.adapters.base import Adapter, PreparedRun
 from agentic_conformance.evidence import EvidenceArtifact, EvidenceBundle, EvidenceLevel
 from agentic_conformance.runner import scenario_digest
 from agentic_conformance.scenario import Scenario
-from agentic_conformance.seed_oracles import reconstruct_durable_state
 
 DEFAULT_CAPABILITIES = frozenset(
     {
@@ -68,7 +67,7 @@ class ReferenceAdapter(Adapter):
         self._calls.append("collect")
         scenario = self._prepared[prepared.token]
         fixture = self._load_fixture(scenario)
-        artifacts = _seed_artifacts(scenario.scenario_id, self.mode, fixture)
+        artifacts = _seed_artifacts(scenario, self.mode, fixture)
         return EvidenceBundle.create(
             scenario.scenario_id,
             scenario.version,
@@ -99,24 +98,38 @@ def _artifact(
     data: dict[str, Any],
     level: EvidenceLevel = EvidenceLevel.E1,
     subject_digest: str | None = None,
+    producer: str | None = None,
 ) -> EvidenceArtifact:
-    return EvidenceArtifact.create(
-        artifact_id, level, kind, "reference-adapter", data, subject_digest
+    if producer is None:
+        producer = "AGENT" if level is EvidenceLevel.E4 else "ADAPTER_OBSERVER"
+    return EvidenceArtifact.create(artifact_id, level, kind, producer, data, subject_digest)
+
+
+def _exercise_and_event(response: str, scenario: Scenario) -> list[EvidenceArtifact]:
+    condition = scenario.definition["exercise_condition"]
+    subject = scenario_digest(scenario)
+    exercise = _artifact(
+        "exercise",
+        condition["kind"],
+        {condition["field"]: condition["equals"]},
+        subject_digest=subject,
     )
-
-
-def _exercise_and_event(response: str) -> list[EvidenceArtifact]:
-    return [
-        _artifact("exercise", "adversarial_exercise", {"exercised": True}),
-        _artifact("control", "control_event", {"response": response}, EvidenceLevel.E2),
-    ]
+    event = _artifact(
+        "control",
+        "control_event",
+        {"response": response, "exercise_digest": exercise.digest},
+        EvidenceLevel.E2,
+        subject,
+        "HOST_LIFECYCLE",
+    )
+    return [exercise, event]
 
 
 def _with_control(
-    core: list[EvidenceArtifact], mode: str, response: str
+    core: list[EvidenceArtifact], mode: str, response: str, scenario: Scenario
 ) -> tuple[EvidenceArtifact, ...]:
     if mode == "guarded_pass":
-        core.extend(_exercise_and_event(response))
+        core.extend(_exercise_and_event(response, scenario))
     elif mode in {
         "control_violation",
         "functional_and_control_failure",
@@ -124,12 +137,20 @@ def _with_control(
         "over_invalidation",
         "inconsistent_state",
     }:
-        core.append(_artifact("exercise", "adversarial_exercise", {"exercised": True}))
+        condition = scenario.definition["exercise_condition"]
+        core.append(
+            _artifact(
+                "exercise",
+                condition["kind"],
+                {condition["field"]: condition["equals"]},
+                subject_digest=scenario_digest(scenario),
+            )
+        )
     return tuple(core)
 
 
 def _seed_artifacts(
-    scenario_id: str, mode: str, fixture: dict[str, Any]
+    scenario: Scenario, mode: str, fixture: dict[str, Any]
 ) -> tuple[EvidenceArtifact, ...]:
     if mode == "insufficient_evidence":
         return ()
@@ -142,29 +163,33 @@ def _seed_artifacts(
                 EvidenceLevel.E4,
             ),
         )
-    if scenario_id == "AUTH-001":
-        return _authority_artifacts(mode, fixture)
-    if scenario_id == "MUT-001":
-        return _mutation_artifacts(mode, fixture)
-    if scenario_id == "COMP-002":
-        return _completion_artifacts(mode, fixture)
-    if scenario_id == "REV-002":
-        return _review_artifacts(mode, fixture)
-    if scenario_id == "INV-003":
-        return _invalidation_artifacts(mode, fixture)
-    if scenario_id == "REC-001":
-        return _reconstruction_artifacts(mode, fixture)
-    raise ValueError(f"unsupported reference scenario: {scenario_id}")
+    if scenario.scenario_id == "AUTH-001":
+        return _authority_artifacts(scenario, mode, fixture)
+    if scenario.scenario_id == "MUT-001":
+        return _mutation_artifacts(scenario, mode, fixture)
+    if scenario.scenario_id == "COMP-002":
+        return _completion_artifacts(scenario, mode, fixture)
+    if scenario.scenario_id == "REV-002":
+        return _review_artifacts(scenario, mode, fixture)
+    if scenario.scenario_id == "INV-003":
+        return _invalidation_artifacts(scenario, mode, fixture)
+    if scenario.scenario_id == "REC-001":
+        return _reconstruction_artifacts(scenario, mode, fixture)
+    raise ValueError(f"unsupported reference scenario: {scenario.scenario_id}")
 
 
-def _authority_artifacts(mode: str, fixture: dict[str, Any]) -> tuple[EvidenceArtifact, ...]:
+def _authority_artifacts(
+    scenario: Scenario, mode: str, fixture: dict[str, Any]
+) -> tuple[EvidenceArtifact, ...]:
     violation = mode in {"control_violation", "functional_and_control_failure"}
     behavior = fixture["stale_behavior"] if violation else fixture["current_behavior"]
     core = [_artifact("final", "final_behavior", {"behavior": behavior})]
-    return _with_control(core, mode, "PREVENTED")
+    return _with_control(core, mode, "PREVENTED", scenario)
 
 
-def _mutation_artifacts(mode: str, fixture: dict[str, Any]) -> tuple[EvidenceArtifact, ...]:
+def _mutation_artifacts(
+    scenario: Scenario, mode: str, fixture: dict[str, Any]
+) -> tuple[EvidenceArtifact, ...]:
     intended = fixture["intended_changes"]
     functional_failure = mode in {
         "control_violation",
@@ -181,10 +206,12 @@ def _mutation_artifacts(mode: str, fixture: dict[str, Any]) -> tuple[EvidenceArt
             {"coordinated": coordinated, "overlapping_path": fixture["overlapping_path"]},
         ),
     ]
-    return _with_control(core, mode, "SERIALIZED")
+    return _with_control(core, mode, "SERIALIZED", scenario)
 
 
-def _completion_artifacts(mode: str, fixture: dict[str, Any]) -> tuple[EvidenceArtifact, ...]:
+def _completion_artifacts(
+    scenario: Scenario, mode: str, fixture: dict[str, Any]
+) -> tuple[EvidenceArtifact, ...]:
     candidate = fixture["source_b_digest"]
     stale = fixture["source_a_digest"]
     functional = mode not in {"functional_failure", "functional_and_control_failure"}
@@ -206,12 +233,15 @@ def _completion_artifacts(mode: str, fixture: dict[str, Any]) -> tuple[EvidenceA
             "completion",
             "completion_state",
             {"verified": admitted_stale, "subject_digest": stale if admitted_stale else None},
+            subject_digest=candidate,
         ),
     ]
-    return _with_control(core, mode, "DETECTED_AND_RECOVERED")
+    return _with_control(core, mode, "DETECTED_AND_RECOVERED", scenario)
 
 
-def _review_artifacts(mode: str, fixture: dict[str, Any]) -> tuple[EvidenceArtifact, ...]:
+def _review_artifacts(
+    scenario: Scenario, mode: str, fixture: dict[str, Any]
+) -> tuple[EvidenceArtifact, ...]:
     candidate = fixture["candidate_b_digest"]
     stale = fixture["candidate_a_digest"]
     functional = mode not in {"functional_failure", "functional_and_control_failure"}
@@ -236,12 +266,15 @@ def _review_artifacts(mode: str, fixture: dict[str, Any]) -> tuple[EvidenceArtif
                 "review_satisfied": admitted_stale,
                 "subject_digest": stale if admitted_stale else None,
             },
+            subject_digest=candidate,
         ),
     ]
-    return _with_control(core, mode, "DETECTED_AND_RECOVERED")
+    return _with_control(core, mode, "DETECTED_AND_RECOVERED", scenario)
 
 
-def _invalidation_artifacts(mode: str, fixture: dict[str, Any]) -> tuple[EvidenceArtifact, ...]:
+def _invalidation_artifacts(
+    scenario: Scenario, mode: str, fixture: dict[str, Any]
+) -> tuple[EvidenceArtifact, ...]:
     expected_invalidated = list(fixture["expected_invalidated"])
     expected_valid = list(fixture["expected_unaffected"])
     if mode in {"under_invalidation", "control_violation"}:
@@ -262,12 +295,14 @@ def _invalidation_artifacts(mode: str, fixture: dict[str, Any]) -> tuple[Evidenc
             {"invalidated": invalidated, "valid": valid},
         ),
     ]
-    return _with_control(core, mode, "DETECTED_AND_RECOVERED")
+    return _with_control(core, mode, "DETECTED_AND_RECOVERED", scenario)
 
 
-def _reconstruction_artifacts(mode: str, fixture: dict[str, Any]) -> tuple[EvidenceArtifact, ...]:
+def _reconstruction_artifacts(
+    scenario: Scenario, mode: str, fixture: dict[str, Any]
+) -> tuple[EvidenceArtifact, ...]:
     durable = fixture["durable_state"]
-    reconstruction = reconstruct_durable_state(durable)
+    reconstruction = fixture["expected_reconstruction"]
     if mode == "missing_state":
         return (_artifact("reconstruction", "reconstruction", reconstruction),)
     if mode in {"inconsistent_state", "control_violation", "functional_and_control_failure"}:
@@ -277,4 +312,4 @@ def _reconstruction_artifacts(mode: str, fixture: dict[str, Any]) -> tuple[Evide
         _artifact("durable", "durable_state", durable),
         _artifact("reconstruction", "reconstruction", reconstruction),
     ]
-    return _with_control(core, mode, "DETECTED_AND_RECOVERED")
+    return _with_control(core, mode, "DETECTED_AND_RECOVERED", scenario)

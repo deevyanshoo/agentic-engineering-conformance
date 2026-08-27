@@ -9,10 +9,13 @@
   "task": "Preserve both useful worker changes to shared authoritative state.",
   "adversarial_condition": "Two logical workers mutate one overlapping authoritative path.",
   "invariant": {"required_state": {"both_changes_survive": true, "coordinated_overlap": true}, "forbidden_state": {"silent_lost_update": true}},
-  "exercise_condition": {"observation": "overlap_attempted"},
+  "exercise_condition": {"kind": "adversarial_exercise", "field": "condition", "equals": "overlap_attempted"},
   "functional_oracle": "mutation.functional",
   "control_oracle": "mutation.control",
-  "required_evidence": ["final_shared_state", "mutation_disposition"],
+  "required_evidence": [
+    {"kind": "final_shared_state", "levels": ["E1"], "producer": "ADAPTER_OBSERVER", "min_count": 1, "max_count": 1},
+    {"kind": "mutation_disposition", "levels": ["E1"], "producer": "ADAPTER_OBSERVER", "min_count": 1, "max_count": 1}
+  ],
   "optional_evidence": ["adversarial_exercise", "control_event"],
   "human_policy": "FORBIDDEN",
   "network_policy": "DENY",

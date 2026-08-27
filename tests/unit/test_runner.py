@@ -1,11 +1,17 @@
-from typing import Any
+from pathlib import Path
+from typing import Any, cast
+
+import pytest
 
 from agentic_conformance.adapters.base import Adapter, PreparedRun
 from agentic_conformance.evidence import EvidenceArtifact, EvidenceBundle, EvidenceLevel
-from agentic_conformance.oracle import OracleDecision, OracleRegistry
+from agentic_conformance.oracle import OracleDecision, OracleRegistry, classify
 from agentic_conformance.result import ControlResponse, Outcome, RunClassification
-from agentic_conformance.runner import Runner, scenario_digest
-from agentic_conformance.scenario import Scenario
+from agentic_conformance.runner import Runner, rescore, scenario_digest
+from agentic_conformance.scenario import Scenario, load_scenario
+from agentic_conformance.seed_oracles import seed_oracle_registry
+
+ROOT = Path(__file__).parents[2]
 
 
 def make_scenario(required: list[str] | None = None) -> Scenario:
@@ -28,7 +34,10 @@ def make_registry() -> OracleRegistry:
     registry.register(
         "functional",
         lambda _scenario, bundle: OracleDecision(
-            Outcome.PASS if bundle.ground_truth.get("functional", True) else Outcome.FAIL,
+            Outcome.FAIL
+            if bundle.admissible_artifacts("functional_state")
+            and bundle.admissible_artifacts("functional_state")[-1].data["passed"] is False
+            else Outcome.PASS,
             ("functional evaluated",),
         ),
     )
@@ -98,6 +107,15 @@ def bundle(*, functional: bool = True, guarded: bool = False) -> EvidenceBundle:
                 "event", EvidenceLevel.E2, "control_event", "host", {"attempted": True}
             )
         )
+    artifacts.append(
+        EvidenceArtifact.create(
+            "functional",
+            EvidenceLevel.E1,
+            "functional_state",
+            "runner",
+            {"passed": functional},
+        )
+    )
     return EvidenceBundle.create(
         "AUTH-001",
         "1.0.0",
@@ -152,3 +170,62 @@ def test_adapter_contract_exposes_observations_not_scores() -> None:
     forbidden = {"score", "classify", "pass_fail"}
     assert forbidden.isdisjoint(Adapter.__abstractmethods__)
     assert Adapter.__abstractmethods__ == {"probe", "prepare", "execute", "collect", "cleanup"}
+
+
+def test_adapter_cannot_replace_benchmark_owned_ground_truth() -> None:
+    scenario = load_scenario(
+        ROOT / "scenarios/authority/AUTH-001/scenario.json",
+        ROOT / "schemas/scenario.schema.json",
+    )
+    malicious = EvidenceBundle.create(
+        scenario.scenario_id,
+        scenario.version,
+        scenario_digest(scenario),
+        {"current_behavior": "A", "stale_behavior": "B"},
+        (
+            EvidenceArtifact.create(
+                "final",
+                EvidenceLevel.E1,
+                "final_behavior",
+                "ADAPTER_OBSERVER",
+                {"behavior": "A"},
+            ),
+        ),
+    )
+    adapter = TrackingAdapter(scenario.required_capabilities, malicious)
+
+    record = Runner(seed_oracle_registry()).run(scenario, adapter)
+
+    assert record.evidence is not None
+    assert record.evidence.ground_truth["current_behavior"] == "B"
+    assert record.result.control is Outcome.FAIL
+
+
+def test_rescore_rejects_substituted_ground_truth() -> None:
+    scenario = load_scenario(
+        ROOT / "scenarios/authority/AUTH-001/scenario.json",
+        ROOT / "schemas/scenario.schema.json",
+    )
+    substituted = EvidenceBundle.create(
+        scenario.scenario_id,
+        scenario.version,
+        scenario_digest(scenario),
+        {"current_behavior": "A"},
+        (),
+    )
+    with pytest.raises(ValueError, match="ground truth"):
+        rescore(scenario, substituted, seed_oracle_registry())
+
+
+@pytest.mark.parametrize("functional", [Outcome.PASS, Outcome.FAIL, Outcome.INCONCLUSIVE])
+def test_control_failure_always_classifies_fail(functional: Outcome) -> None:
+    decision = OracleDecision(Outcome.FAIL, ("control violated",))
+    assert classify(functional, decision) is RunClassification.FAIL
+
+
+def test_invalid_probe_response_is_invalid_run() -> None:
+    adapter = TrackingAdapter(cast("frozenset[str]", None))
+    record = Runner(make_registry()).run(make_scenario(), adapter)
+    assert record.result.classification is RunClassification.INVALID_RUN
+    assert record.executed is False
+    assert record.adapter_error is not None

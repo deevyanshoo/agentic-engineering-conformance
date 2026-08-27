@@ -29,8 +29,8 @@ Non-goals include hosted services, dashboards, new agent runtimes or workflow DS
 | D9 | Golden classification tests | D7, D8 | COMPLETE |
 | D10 | Stored-evidence rescoring tests | D6, D8 | COMPLETE |
 | D11 | Full deterministic verification | D1–D10 | COMPLETE |
-| D12 | Independent read-only review | D11 | IN_PROGRESS |
-| D13 | Finding disposition/remediation | D12 | PENDING |
+| D12 | Independent read-only review | D11 | COMPLETE |
+| D13 | Finding disposition/remediation | D12 | COMPLETE |
 | D14 | Final deterministic verification | D13 | PENDING |
 | D15 | M1 completion record | D14 | PENDING |
 
@@ -61,7 +61,7 @@ Final D14 evidence remains pending.
 
 ## Review evidence and findings
 
-Independent review has not started. Findings: none recorded.
+Independent read-only review completed against `6beb272..9012861`. The reviewer independently observed 46 passing tests and reported nine findings. All are dispositioned `VALID_CURRENT_SCOPE` in `reports/m1-review.md`; all nine have regression-tested remediations. Independent follow-up review is pending. No finding is deferred.
 
 ## Blockers and completion state
 

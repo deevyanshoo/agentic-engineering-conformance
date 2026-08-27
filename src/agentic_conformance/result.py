@@ -40,6 +40,54 @@ class RunResult:
     reasons: tuple[str, ...]
     limitations: tuple[str, ...]
 
+    def __post_init__(self) -> None:
+        if not self.reasons:
+            raise ValueError("result requires at least one reason")
+        classification = self.classification
+        if classification in {RunClassification.UNSUPPORTED, RunClassification.INVALID_RUN}:
+            if (
+                self.functional is not Outcome.NOT_RUN
+                or self.control is not Outcome.NOT_RUN
+                or self.control_response is not ControlResponse.NOT_OBSERVABLE
+            ):
+                raise ValueError(f"{classification.value} requires NOT_RUN/NOT_OBSERVABLE")
+        elif classification is RunClassification.GUARDED_PASS:
+            guarded = {
+                ControlResponse.PREVENTED,
+                ControlResponse.ISOLATED,
+                ControlResponse.SERIALIZED,
+                ControlResponse.DETECTED_AND_RECOVERED,
+            }
+            if (
+                self.functional not in {Outcome.PASS, Outcome.FAIL}
+                or self.control is not Outcome.PASS
+                or self.control_response not in guarded
+            ):
+                raise ValueError("GUARDED_PASS requires control PASS and guarded response")
+        elif classification is RunClassification.BEHAVIORAL_PASS:
+            if (
+                self.functional not in {Outcome.PASS, Outcome.FAIL}
+                or self.control is not Outcome.PASS
+                or self.control_response
+                not in {
+                    ControlResponse.BEHAVIOR_ONLY,
+                    ControlResponse.NOT_OBSERVABLE,
+                }
+            ):
+                raise ValueError("BEHAVIORAL_PASS requires control PASS without guarded response")
+        elif classification is RunClassification.FAIL:
+            if self.control is not Outcome.FAIL:
+                raise ValueError("FAIL requires control FAIL")
+        elif classification is RunClassification.INCONCLUSIVE and (
+            self.control is Outcome.FAIL
+            or Outcome.INCONCLUSIVE
+            not in {
+                self.functional,
+                self.control,
+            }
+        ):
+            raise ValueError("INCONCLUSIVE requires an inconclusive dimension and no control FAIL")
+
     def to_mapping(self) -> dict[str, Any]:
         return {
             "schema_version": "0.1",

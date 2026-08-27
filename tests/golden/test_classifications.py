@@ -3,8 +3,9 @@ from pathlib import Path
 import pytest
 
 from agentic_conformance.adapters.reference import ReferenceAdapter
+from agentic_conformance.evidence import EvidenceArtifact, EvidenceBundle, EvidenceLevel
 from agentic_conformance.result import Outcome, RunClassification
-from agentic_conformance.runner import Runner
+from agentic_conformance.runner import Runner, rescore, scenario_digest
 from agentic_conformance.scenario import load_scenario
 from agentic_conformance.seed_oracles import seed_oracle_registry
 
@@ -65,4 +66,62 @@ def test_agent_assertion_alone_is_inconclusive() -> None:
         .run(load("AUTH-001"), ReferenceAdapter(mode="assertion_only"))
         .result
     )
+    assert result.classification is RunClassification.INCONCLUSIVE
+
+
+def test_labels_without_declared_exercise_and_event_binding_do_not_guard() -> None:
+    scenario = load("AUTH-001")
+    record = Runner(seed_oracle_registry()).run(scenario, ReferenceAdapter(mode="behavioral_pass"))
+    assert record.evidence is not None
+    artifacts = (
+        *record.evidence.artifacts,
+        EvidenceArtifact.create(
+            "exercise-label",
+            EvidenceLevel.E1,
+            "adversarial_exercise",
+            "ADAPTER_OBSERVER",
+            {"exercised": True},
+            scenario_digest(scenario),
+        ),
+        EvidenceArtifact.create(
+            "control-label",
+            EvidenceLevel.E2,
+            "control_event",
+            "HOST_LIFECYCLE",
+            {"response": "PREVENTED"},
+            scenario_digest(scenario),
+        ),
+    )
+    relabeled = EvidenceBundle.create(
+        scenario.scenario_id,
+        scenario.version,
+        scenario_digest(scenario),
+        scenario.ground_truth,
+        artifacts,
+    )
+    result = rescore(scenario, relabeled, seed_oracle_registry())
+    assert result.classification is RunClassification.BEHAVIORAL_PASS
+
+
+@pytest.mark.parametrize("defect", ["wrong_level", "duplicate"])
+def test_required_evidence_contract_rejects_inadmissible_or_ambiguous_evidence(
+    defect: str,
+) -> None:
+    scenario = load("AUTH-001")
+    final = EvidenceArtifact.create(
+        "final",
+        EvidenceLevel.E3 if defect == "wrong_level" else EvidenceLevel.E1,
+        "final_behavior",
+        "ADAPTER_OBSERVER",
+        {"behavior": "B"},
+    )
+    artifacts = (final, final) if defect == "duplicate" else (final,)
+    evidence = EvidenceBundle.create(
+        scenario.scenario_id,
+        scenario.version,
+        scenario_digest(scenario),
+        scenario.ground_truth,
+        artifacts,
+    )
+    result = rescore(scenario, evidence, seed_oracle_registry())
     assert result.classification is RunClassification.INCONCLUSIVE

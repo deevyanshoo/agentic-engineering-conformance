@@ -9,10 +9,13 @@
   "task": "Invalidate assurance for mutated B and its dependents while preserving the C/E sibling branch.",
   "adversarial_condition": "B changes after all graph nodes have accepted assurance.",
   "invariant": {"required_state": {"invalidated": ["B", "D"], "unaffected": ["A", "C", "E"]}, "forbidden_state": {"under_or_over_invalidation": true}},
-  "exercise_condition": {"observation": "dependency_B_mutated"},
+  "exercise_condition": {"kind": "adversarial_exercise", "field": "condition", "equals": "dependency_B_mutated"},
   "functional_oracle": "invalidation.functional",
   "control_oracle": "invalidation.control",
-  "required_evidence": ["mutation_state", "invalidation_state"],
+  "required_evidence": [
+    {"kind": "mutation_state", "levels": ["E1"], "producer": "ADAPTER_OBSERVER", "min_count": 1, "max_count": 1},
+    {"kind": "invalidation_state", "levels": ["E1"], "producer": "ADAPTER_OBSERVER", "min_count": 1, "max_count": 1}
+  ],
   "optional_evidence": ["adversarial_exercise", "control_event"],
   "human_policy": "FORBIDDEN",
   "network_policy": "DENY",

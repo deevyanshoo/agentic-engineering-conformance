@@ -82,6 +82,31 @@ def test_stored_artifact_rejects_payload_digest_mismatch() -> None:
         EvidenceArtifact.from_mapping(stored)
 
 
+@pytest.mark.parametrize(
+    ("field", "replacement"),
+    [
+        ("id", "relabeled"),
+        ("level", "E1"),
+        ("kind", "final_behavior"),
+        ("producer", "trusted-runner"),
+        ("subject_digest", "sha256:other-subject"),
+    ],
+)
+def test_stored_artifact_rejects_provenance_relabeling(field: str, replacement: str) -> None:
+    artifact = EvidenceArtifact.create(
+        "claim",
+        EvidenceLevel.E4,
+        "agent_assertion",
+        "agent",
+        {"behavior": "B"},
+        "sha256:candidate-b",
+    )
+    stored = artifact.to_mapping()
+    stored[field] = replacement
+    with pytest.raises(ValueError, match="digest"):
+        EvidenceArtifact.from_mapping(stored)
+
+
 def test_scenario_and_result_round_trip() -> None:
     scenario = Scenario.from_mapping(
         {
@@ -109,3 +134,51 @@ def test_scenario_and_result_round_trip() -> None:
         limitations=(),
     )
     assert RunResult.from_mapping(json.loads(json.dumps(result.to_mapping()))) == result
+
+
+@pytest.mark.parametrize("defect", ["future_version", "extra_field", "missing_field"])
+def test_stored_bundle_rejects_incompatible_or_open_contracts(defect: str) -> None:
+    bundle = EvidenceBundle.create("AUTH-001", "1.0.0", "sha256:s", {}, ())
+    stored = json.loads(bundle.to_json())
+    if defect == "future_version":
+        stored["schema_version"] = "999"
+    elif defect == "extra_field":
+        stored["unexpected"] = True
+    else:
+        del stored["scenario_version"]
+    with pytest.raises(ValueError, match="stored evidence"):
+        EvidenceBundle.from_json(json.dumps(stored))
+
+
+def test_stored_artifact_rejects_unknown_fields() -> None:
+    artifact = EvidenceArtifact.create(
+        "final", EvidenceLevel.E1, "final_behavior", "runner", {"behavior": "B"}
+    )
+    stored = artifact.to_mapping()
+    stored["unexpected"] = True
+    with pytest.raises(ValueError, match="stored evidence artifact"):
+        EvidenceArtifact.from_mapping(stored)
+
+
+def test_run_result_rejects_semantically_impossible_combination() -> None:
+    with pytest.raises(ValueError, match="UNSUPPORTED"):
+        RunResult(
+            functional=Outcome.PASS,
+            control=Outcome.PASS,
+            classification=RunClassification.UNSUPPORTED,
+            control_response=ControlResponse.PREVENTED,
+            reasons=("impossible",),
+            limitations=(),
+        )
+
+
+def test_guarded_result_requires_a_functional_outcome() -> None:
+    with pytest.raises(ValueError, match="GUARDED_PASS"):
+        RunResult(
+            functional=Outcome.NOT_RUN,
+            control=Outcome.PASS,
+            classification=RunClassification.GUARDED_PASS,
+            control_response=ControlResponse.PREVENTED,
+            reasons=("impossible",),
+            limitations=(),
+        )
