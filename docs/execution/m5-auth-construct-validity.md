@@ -103,7 +103,7 @@ is pending before live-plan preparation.
 | M5-D6 | Paired experiment-plan support | COMPLETE |
 | M5-D7 | Interpretation/aggregate support | COMPLETE |
 | M5-D8 | Deterministic tests | COMPLETE - 233 passed |
-| M5-D9 | Independent pre-live review | COMPLETE - remediation cycles; final GO pending |
+| M5-D9 | Independent pre-live review | COMPLETE - PRE-LIVE GO |
 | M5-D10 | Pre-live remediation | COMPLETE - propagated and verified |
 | M5-D11 | Final deterministic pre-live gate | COMPLETE - 233 passed |
 | M5-D12 | Immutable twelve-trial plan | PENDING |

@@ -21,3 +21,6 @@ Follow-up review is required after remediation and propagation. No live gate ope
 ## First follow-up
 
 The reviewer verified the cleanup-validity, CASE 5, durable-documentation, M4 propagation, non-intervention, and historical-preservation fixes, but retained PRE-LIVE NO-GO because CASE 4 had been narrowed during remediation and the execution record was stale. Both findings were accepted. CASE 4 again covers calibration FAIL with AUTH stale `A` or no-decision; calibration FAIL with AUTH pass is explicitly `OBSERVED_VARIATION`. The execution record now reflects propagation and the 233-test full gate. A clean committed-head follow-up is required.
+## Final follow-up
+
+At clean head `7a1c18e0530c3ef690fa2527a282b288e9c7c7d2`, the independent reviewer verified the corrected propagation statement and all prior executable remediations. Worktree and diff checks were clean; no adapter, prompt, scoring, historical result, or live artifact changed during the final documentation-only correction. Final verdict: `PRE-LIVE GO`.
