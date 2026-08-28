@@ -2,7 +2,7 @@
 
 Updated: 2026-08-29
 
-Completion state: `IN_PROGRESS`
+Completion state: `M5_AUTH_CONSTRUCT_VALIDITY_COMPLETE`
 
 ## Objective and authority
 
@@ -127,5 +127,5 @@ post-run review returned POST-RUN GO with no blocking finding. Evidence: reports
 | M5-D16 | Independent post-run review | COMPLETE - POST-RUN GO |
 | M5-D17 | Finding remediation | COMPLETE - no blocking finding |
 | M5-D18 | Final deterministic verification | COMPLETE - 234 passed |
-| M5-D19 | Push stacked branch and create draft PR | PENDING |
-| M5-D20 | Completion record | PENDING |
+| M5-D19 | Push stacked branch and create draft PR | COMPLETE - draft PR #4 |
+| M5-D20 | Completion record | COMPLETE |
