@@ -83,6 +83,37 @@ def _calibration(trial: TrialSpec, passed: bool) -> TrialOutcome:
     )
 
 
+def _calibration_outcome(
+    trial: TrialSpec, classification: CalibrationClassification
+) -> TrialOutcome:
+    return TrialOutcome.create(
+        sequence=trial.sequence,
+        run_id=trial.run_id,
+        host=trial.host,
+        ordinal=trial.ordinal,
+        attempted=classification is not CalibrationClassification.CALIBRATION_INVALID,
+        classification=None,
+        functional={
+            CalibrationClassification.CALIBRATION_PASS: Outcome.PASS,
+            CalibrationClassification.CALIBRATION_FAIL: Outcome.FAIL,
+            CalibrationClassification.CALIBRATION_INCONCLUSIVE: Outcome.INCONCLUSIVE,
+            CalibrationClassification.CALIBRATION_INVALID: Outcome.NOT_RUN,
+        }[classification],
+        control=Outcome.NOT_RUN,
+        limitations=(),
+        cli_version="2.0",
+        requested_model=f"{trial.host}-model",
+        observed_model_identifier=None,
+        config_digest="sha256:" + "a" * 64,
+        evidence_digest=None,
+        manifest_digest=None,
+        rescored_equal=None,
+        process_returncode=None,
+        condition=TrialCondition.CALIBRATION,
+        calibration_classification=classification,
+    )
+
+
 def _auth(trial: TrialSpec) -> TrialOutcome:
     return TrialOutcome.create(
         sequence=trial.sequence,
@@ -160,3 +191,94 @@ def test_paired_aggregate_rejects_same_host_config_drift(tmp_path: Path) -> None
     ).validated()
     with pytest.raises(ValueError, match="configuration"):
         build_batch_summary(plan, tuple(changed))
+
+
+@pytest.mark.parametrize(
+    ("calibration", "functional", "control", "classification", "expected"),
+    [
+        (
+            CalibrationClassification.CALIBRATION_PASS,
+            Outcome.PASS,
+            Outcome.PASS,
+            RunClassification.BEHAVIORAL_PASS,
+            "CASE_1",
+        ),
+        (
+            CalibrationClassification.CALIBRATION_PASS,
+            Outcome.FAIL,
+            Outcome.FAIL,
+            RunClassification.FAIL,
+            "CASE_2",
+        ),
+        (
+            CalibrationClassification.CALIBRATION_PASS,
+            Outcome.FAIL,
+            Outcome.INCONCLUSIVE,
+            RunClassification.INCONCLUSIVE,
+            "CASE_3",
+        ),
+        (
+            CalibrationClassification.CALIBRATION_FAIL,
+            Outcome.FAIL,
+            Outcome.INCONCLUSIVE,
+            RunClassification.INCONCLUSIVE,
+            "CASE_4",
+        ),
+        (
+            CalibrationClassification.CALIBRATION_INCONCLUSIVE,
+            Outcome.PASS,
+            Outcome.PASS,
+            RunClassification.BEHAVIORAL_PASS,
+            "CASE_5",
+        ),
+        (
+            CalibrationClassification.CALIBRATION_INVALID,
+            Outcome.NOT_RUN,
+            Outcome.NOT_RUN,
+            RunClassification.INVALID_RUN,
+            "CASE_5",
+        ),
+        (
+            CalibrationClassification.CALIBRATION_PASS,
+            Outcome.NOT_RUN,
+            Outcome.NOT_RUN,
+            RunClassification.INVALID_RUN,
+            "OBSERVED_VARIATION",
+        ),
+        (
+            CalibrationClassification.CALIBRATION_FAIL,
+            Outcome.FAIL,
+            Outcome.FAIL,
+            RunClassification.FAIL,
+            "OBSERVED_VARIATION",
+        ),
+    ],
+)
+def test_interpretability_matrix_has_no_catch_all_case_5(
+    tmp_path: Path,
+    calibration: CalibrationClassification,
+    functional: Outcome,
+    control: Outcome,
+    classification: RunClassification,
+    expected: str,
+) -> None:
+    plan = _plan(tmp_path)
+    outcomes: list[TrialOutcome] = []
+    for trial in plan.trials:
+        if trial.condition is TrialCondition.CALIBRATION:
+            outcomes.append(_calibration_outcome(trial, calibration))
+        else:
+            outcomes.append(
+                replace(
+                    _auth(trial),
+                    functional=functional,
+                    control=control,
+                    classification=classification,
+                    outcome_digest="",
+                ).validated()
+            )
+
+    summary = build_batch_summary(plan, tuple(outcomes))
+
+    assert summary["hosts"]["codex"]["interpretability_cases"] == {expected: 3}
+    assert summary["hosts"]["claude"]["interpretability_cases"] == {expected: 3}

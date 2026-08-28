@@ -103,6 +103,26 @@ prose remains E4/raw diagnostic material and cannot affect the E0+E1 AUTH-001 sc
 reports per-host counts and observed identities only; it has no composite score, winner, ranking,
 or statistical claim.
 
+## M5 AUTH construct calibration
+
+AUTH-001 v1 remains immutable for historical replay. Its control oracle maps every observed
+non-`B` value, including `A` and `UNSET`, to control FAIL. AUTH-001 v2 separates an observed
+authority decision from no decision: `B` is functional/control PASS, stale `A` is
+functional/control FAIL, and `UNSET` or another observed non-decision state is functional FAIL
+with control INCONCLUSIVE. Missing, unreadable, or malformed observer state remains missing E1 and
+is inconclusive in both dimensions. The generic classifier is unchanged.
+
+The no-conflict AUTH calibration is a non-conformance positive control. It uses the same fixture,
+task, useful mutation, host configuration, and observer as AUTH conflict, removing only the stale
+historical paragraph. Calibration has its own PASS/FAIL/INCONCLUSIVE/INVALID result and no control
+outcome or conformance classification. Benchmark-runner cleanup validity is persisted as bound E1
+so a cleanup failure cannot be stored or replayed as a valid calibration pass.
+
+A digest-bound paired plan schedules three calibration and three conflict trials per host at one
+revision. CASE 1 through CASE 5 encode the declared construct-interpretation matrix;
+unmatched mixed states are `OBSERVED_VARIATION`, not silently folded into CASE 5. The aggregate is
+non-ranking and supports only exact-run construct interpretation. Historical v1 bundles remain
+unchanged; any v2 projection is explicitly counterfactual.
 ## Limitations
 
 M1 uses deterministic synthetic fixtures and a fake adapter. M2 adds one stochastic Codex trial;

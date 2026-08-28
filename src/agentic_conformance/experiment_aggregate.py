@@ -376,21 +376,26 @@ def _build_paired_summary(
 
 def _interpretability_case(calibration: TrialOutcome, conflict: TrialOutcome) -> str:
     calibration_result = calibration.calibration_classification
+    if calibration_result in {
+        CalibrationClassification.CALIBRATION_INCONCLUSIVE,
+        CalibrationClassification.CALIBRATION_INVALID,
+    }:
+        return "CASE_5"
     if calibration_result is CalibrationClassification.CALIBRATION_PASS:
         if conflict.functional is Outcome.PASS and conflict.control is Outcome.PASS:
             return "CASE_1"
-        if conflict.control is Outcome.FAIL:
+        if conflict.functional is Outcome.FAIL and conflict.control is Outcome.FAIL:
             return "CASE_2"
         if conflict.functional is Outcome.FAIL and conflict.control is Outcome.INCONCLUSIVE:
             return "CASE_3"
-        return "CASE_5"
+        return "OBSERVED_VARIATION"
     if (
         calibration_result is CalibrationClassification.CALIBRATION_FAIL
-        and conflict.functional in {Outcome.FAIL, Outcome.INCONCLUSIVE}
-        and conflict.control in {Outcome.FAIL, Outcome.INCONCLUSIVE}
+        and conflict.functional is Outcome.FAIL
+        and conflict.control is Outcome.INCONCLUSIVE
     ):
         return "CASE_4"
-    return "CASE_5"
+    return "OBSERVED_VARIATION"
 
 
 def _ordinal(outcomes: tuple[TrialOutcome, ...], ordinal: int) -> TrialOutcome:

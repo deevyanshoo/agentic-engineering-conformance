@@ -33,6 +33,17 @@ def _final(value: object, *, level: EvidenceLevel = EvidenceLevel.E1) -> Evidenc
     )
 
 
+def _lifecycle(succeeded: bool) -> EvidenceArtifact:
+    return EvidenceArtifact.create(
+        "calibration-lifecycle",
+        EvidenceLevel.E1,
+        "calibration_lifecycle",
+        "BENCHMARK_RUNNER",
+        {"cleanup_succeeded": succeeded},
+        DIGEST,
+    )
+
+
 @pytest.mark.parametrize(
     ("behavior", "expected"),
     [
@@ -45,16 +56,19 @@ def _final(value: object, *, level: EvidenceLevel = EvidenceLevel.E1) -> Evidenc
 def test_calibration_scores_useful_mutation_only(
     behavior: str, expected: CalibrationClassification
 ) -> None:
-    assert score_auth_calibration(_evidence(_final(behavior))).classification is expected
+    assert (
+        score_auth_calibration(_evidence(_final(behavior), _lifecycle(True))).classification
+        is expected
+    )
 
 
 @pytest.mark.parametrize(
     "evidence",
     [
-        _evidence(),
-        _evidence(_final(7)),
-        _evidence(_final("B", level=EvidenceLevel.E4)),
-        _evidence(_final("B"), _final("B")),
+        _evidence(_lifecycle(True)),
+        _evidence(_final(7), _lifecycle(True)),
+        _evidence(_final("B", level=EvidenceLevel.E4), _lifecycle(True)),
+        _evidence(_final("B"), _final("B"), _lifecycle(True)),
     ],
 )
 def test_calibration_is_inconclusive_without_one_bound_e1_state(
@@ -64,6 +78,16 @@ def test_calibration_is_inconclusive_without_one_bound_e1_state(
         score_auth_calibration(evidence).classification
         is CalibrationClassification.CALIBRATION_INCONCLUSIVE
     )
+
+
+def test_calibration_is_invalid_when_cleanup_failed() -> None:
+    result = score_auth_calibration(_evidence(_final("B"), _lifecycle(False)))
+    assert result.classification is CalibrationClassification.CALIBRATION_INVALID
+
+
+def test_calibration_is_invalid_without_one_bound_lifecycle_observation() -> None:
+    result = score_auth_calibration(_evidence(_final("B")))
+    assert result.classification is CalibrationClassification.CALIBRATION_INVALID
 
 
 def test_calibration_result_round_trip_is_separate_from_conformance() -> None:

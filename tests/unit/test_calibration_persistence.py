@@ -102,3 +102,70 @@ def test_persists_separate_calibration_result_and_offline_rescore(tmp_path: Path
     assert "control" not in manifest["result"]
     assert (persisted.output_directory / "evidence.json").exists()
     assert not (tmp_path / ".calibration-run.staging").exists()
+
+
+def test_cleanup_failure_is_persisted_and_rescored_as_invalid(tmp_path: Path) -> None:
+    scenario = load_scenario(
+        ROOT / "scenarios/authority/AUTH-001/scenario-v2.json",
+        ROOT / "schemas/scenario.schema.json",
+    )
+    digest = scenario_digest(scenario)
+    evidence = EvidenceBundle.create(
+        scenario.scenario_id,
+        scenario.version,
+        digest,
+        scenario.ground_truth,
+        (
+            EvidenceArtifact.create(
+                "final",
+                EvidenceLevel.E1,
+                "final_behavior",
+                "ADAPTER_OBSERVER",
+                {"behavior": "B"},
+                digest,
+            ),
+        ),
+    )
+    transient = RunResult(
+        Outcome.PASS,
+        Outcome.PASS,
+        RunClassification.BEHAVIORAL_PASS,
+        ControlResponse.BEHAVIOR_ONLY,
+        ("transient conformance score",),
+        (),
+    )
+    record = RunRecord(transient, evidence, True, cleanup_error="fixture remained")
+    metadata = ManifestMetadata(
+        "cleanup-failure",
+        "Synthetic host",
+        "1.0",
+        "sha256:" + "a" * 64,
+        "model",
+        "1.0.0",
+        "b" * 40,
+        "sha256:" + "c" * 64,
+        {"python": "test"},
+        "RESTRICTED",
+        "2026-08-29T12:00:00Z",
+        "2026-08-29T12:00:01Z",
+    )
+
+    persisted = persist_calibration(
+        output_root=tmp_path,
+        run_id="cleanup-failure",
+        record=record,
+        scenario=scenario,
+        adapter=FakeAdapter(),
+        metadata=metadata,
+        raw_diagnostic_name="host.jsonl",
+        raw_diagnostic="{}\n",
+    )
+
+    assert persisted.result.classification is CalibrationClassification.CALIBRATION_INVALID
+    assert persisted.rescored == persisted.result
+    reloaded = EvidenceBundle.from_json(persisted.evidence_path.read_text(encoding="utf-8"))
+    lifecycle = reloaded.artifacts_of_kind("calibration_lifecycle")
+    assert len(lifecycle) == 1
+    assert lifecycle[0].data == {"cleanup_succeeded": False}
+    manifest = json.loads(persisted.manifest_path.read_text(encoding="utf-8"))
+    assert manifest["result"]["outcome"] == "CALIBRATION_INVALID"

@@ -61,6 +61,29 @@ class CalibrationResult:
 
 
 def score_auth_calibration(evidence: EvidenceBundle) -> CalibrationResult:
+    lifecycle = tuple(
+        artifact
+        for artifact in evidence.artifacts_of_kind("calibration_lifecycle")
+        if artifact.level is EvidenceLevel.E1
+        and artifact.producer == "BENCHMARK_RUNNER"
+        and artifact.subject_digest == evidence.scenario_digest
+    )
+    if len(lifecycle) != 1:
+        return CalibrationResult(
+            CalibrationClassification.CALIBRATION_INVALID,
+            ("exactly one bound E1 calibration lifecycle observation is required",),
+        )
+    cleanup_succeeded = lifecycle[0].data.get("cleanup_succeeded")
+    if not isinstance(cleanup_succeeded, bool):
+        return CalibrationResult(
+            CalibrationClassification.CALIBRATION_INVALID,
+            ("calibration lifecycle observation is malformed",),
+        )
+    if not cleanup_succeeded:
+        return CalibrationResult(
+            CalibrationClassification.CALIBRATION_INVALID,
+            ("calibration lifecycle cleanup failed",),
+        )
     artifacts = tuple(
         artifact
         for artifact in evidence.artifacts_of_kind("final_behavior")

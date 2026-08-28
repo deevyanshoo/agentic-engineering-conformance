@@ -15,7 +15,7 @@ from agentic_conformance.calibration import (
     CalibrationResult,
     rescore_auth_calibration,
 )
-from agentic_conformance.evidence import EvidenceBundle
+from agentic_conformance.evidence import EvidenceArtifact, EvidenceBundle, EvidenceLevel
 from agentic_conformance.manifest import ManifestMetadata
 from agentic_conformance.runner import RunRecord, scenario_digest
 from agentic_conformance.scenario import Scenario
@@ -55,6 +55,24 @@ def persist_calibration(
         or Path(raw_diagnostic_name).name != raw_diagnostic_name
     ):
         raise ValueError("calibration output names must be single path components")
+    if record.evidence.artifacts_of_kind("calibration_lifecycle"):
+        raise ValueError("adapter evidence cannot supply benchmark lifecycle validity")
+    lifecycle = EvidenceArtifact.create(
+        f"{run_id}-calibration-lifecycle",
+        EvidenceLevel.E1,
+        "calibration_lifecycle",
+        "BENCHMARK_RUNNER",
+        {"cleanup_succeeded": record.cleanup_error is None},
+        scenario_digest(scenario),
+    )
+    persisted_evidence = EvidenceBundle.create(
+        record.evidence.scenario_id,
+        record.evidence.scenario_version,
+        record.evidence.scenario_digest,
+        record.evidence.ground_truth,
+        (*record.evidence.artifacts, lifecycle),
+        record.evidence.limitations,
+    )
     diagnostics = dict(additional_diagnostics or {})
     reserved = {"evidence.json", "calibration.json", raw_diagnostic_name}
     if any(not name or Path(name).name != name or name in reserved for name in diagnostics):
@@ -70,16 +88,16 @@ def persist_calibration(
     staged_manifest = staging / "calibration.json"
     staged_raw = staging / raw_diagnostic_name
     try:
-        _atomic_write(staged_evidence, record.evidence.to_json() + "\n")
+        _atomic_write(staged_evidence, persisted_evidence.to_json() + "\n")
         _atomic_write(staged_raw, raw_diagnostic)
         for name, value in diagnostics.items():
             _atomic_write(staging / name, value)
         reloaded = EvidenceBundle.from_json(staged_evidence.read_text(encoding="utf-8"))
-        initial = rescore_auth_calibration(scenario, record.evidence)
+        initial = rescore_auth_calibration(scenario, persisted_evidence)
         rescored = rescore_auth_calibration(scenario, reloaded)
         if rescored != initial:
             raise RuntimeError("stored-evidence calibration rescore differs from initial score")
-        manifest = _manifest(record, scenario, adapter, metadata, initial)
+        manifest = _manifest(record, persisted_evidence, scenario, adapter, metadata, initial)
         _validate_schema(manifest, ROOT / "schemas/calibration-run.schema.json")
         _validate_schema(initial.to_mapping(), ROOT / "schemas/calibration-result.schema.json")
         _atomic_write(staged_manifest, json.dumps(manifest, indent=2, sort_keys=True) + "\n")
@@ -100,6 +118,7 @@ def persist_calibration(
 
 def _manifest(
     record: RunRecord,
+    evidence: EvidenceBundle,
     scenario: Scenario,
     adapter: Adapter,
     metadata: ManifestMetadata,
@@ -140,7 +159,7 @@ def _manifest(
                 "digest": artifact.digest,
                 "path": "evidence.json",
             }
-            for artifact in record.evidence.artifacts
+            for artifact in evidence.artifacts
         ],
         "result": result.to_mapping(),
         "limitations": limitations,

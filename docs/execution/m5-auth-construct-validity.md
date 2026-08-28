@@ -25,7 +25,7 @@ or merging.
 - PR #2: draft/open/unmerged, `m3/claude-adapter` at
   `782958075e161fc39724deedf9b55872ab36b6cf`, targeting M2.
 - PR #3: draft/open/unmerged, `m4/neutral-experiments` at
-  `22ff26c91bd07116cda2f6b84454fe4ee20fef06`, targeting M3.
+  `0dc6700`, targeting M3.
 - M5 branch `m5/auth-construct-validity` and its isolated ignored worktree were originally created
   from M4 head `ae7768474a4e6cf4c1c07432076453eff8bce450`, then rebased onto the corrected
   current M4 head above. Main remains unchanged; prior feature branches changed only through the
@@ -60,8 +60,11 @@ INCONCLUSIVE; missing/unreadable/malformed output remains missing E1 and is inco
 - Independent semantic review returned SEMANTIC GO with no blocker. It requires fail-closed
   missing/malformed evidence handling and deterministic exact-path version selection; both are
   accepted implementation requirements. Evidence: reports/m5-semantic-review.md.
-- No current blocker. The versioned semantic repair and paired deterministic worker are complete;
-  independent pre-live review is the active node.
+- Independent pre-live review initially returned PRE-LIVE NO-GO with two blockers and two
+  important findings. All were accepted: calibration cleanup validity is now evidence-bound,
+  unmatched pairs use `OBSERVED_VARIATION`, durable architecture/terminology are current, and the
+  scheduler deletion issue was repaired on its owning M4 branch. Follow-up review is pending; the
+  live gate remains closed.
 
 ## Lower-layer correction and propagation
 
@@ -71,8 +74,14 @@ regression proving scenario version `2.0.0` retains fixture version `1.0.0`. Ful
 passed with 122 tests. The correction was pushed to PR #1, then the clean M3, M4, and M5 branches
 were rebased in order. Historical completion commits and live evidence were not edited.
 
-Current local deterministic gate: Ruff format/check passed, strict mypy passed for 26 source
-files, pytest passed with 220 tests, and branch-range diff checks passed.
+The M5 pre-live review also exposed an M4-owned scheduler defect: a terminal scheduled task
+cleanup failure was recorded but did not block launcher success. M4 commit `0dc6700` now raises
+after durably recording deletion failure; its focused and full deterministic checks passed. The
+historical M4 batch is unchanged because deletion succeeded. M5 will rebase onto this correction
+before the live plan is bound.
+
+Current remediation evidence: 25 focused calibration/persistence/interpretation tests passed.
+Full pre-live regression verification remains pending after M4 propagation.
 
 ## Execution DAG
 
@@ -88,8 +97,8 @@ files, pytest passed with 220 tests, and branch-range diff checks passed.
 | M5-D6 | Paired experiment-plan support | COMPLETE |
 | M5-D7 | Interpretation/aggregate support | COMPLETE |
 | M5-D8 | Deterministic tests | COMPLETE - 220 passed |
-| M5-D9 | Independent pre-live review | PENDING |
-| M5-D10 | Pre-live remediation | PENDING |
+| M5-D9 | Independent pre-live review | COMPLETE - initial NO-GO; follow-up pending |
+| M5-D10 | Pre-live remediation | COMPLETE - awaiting propagation/review |
 | M5-D11 | Final deterministic pre-live gate | PENDING |
 | M5-D12 | Immutable twelve-trial plan | PENDING |
 | M5-D13 | Neutral autonomous scheduled batch | PENDING |
