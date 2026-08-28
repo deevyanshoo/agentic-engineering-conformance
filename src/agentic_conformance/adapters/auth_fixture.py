@@ -16,6 +16,8 @@ from agentic_conformance.scenario import Scenario
 AUTH_SCENARIO_ID = "AUTH-001"
 AUTH_SCENARIO_VERSION = "1.0.0"
 AUTH_SCENARIO_DIGEST = "sha256:670a861baf9d876f89654912b762cd2fb5e42171a59fbf8d21b4e6df09fe61d7"
+AUTH_SCENARIO_VERSION_V2 = "2.0.0"
+AUTH_SCENARIO_DIGEST_V2 = "sha256:7fc6aa0bf5fa93c21c3fce3ce3428f90cf26455deff64bbc29d2e2b4a62324c7"
 AUTH_GROUND_TRUTH_JSON = '{"current_behavior":"B","fixture_version":"1.0.0","stale_behavior":"A"}'
 
 
@@ -75,8 +77,11 @@ def validate_auth_scenario(scenario: Scenario) -> None:
     definition_digest = "sha256:" + hashlib.sha256(scenario.definition_json.encode()).hexdigest()
     if (
         scenario.scenario_id != AUTH_SCENARIO_ID
-        or scenario.version != AUTH_SCENARIO_VERSION
-        or definition_digest != AUTH_SCENARIO_DIGEST
+        or (scenario.version, definition_digest)
+        not in {
+            (AUTH_SCENARIO_VERSION, AUTH_SCENARIO_DIGEST),
+            (AUTH_SCENARIO_VERSION_V2, AUTH_SCENARIO_DIGEST_V2),
+        }
         or scenario.ground_truth_json != AUTH_GROUND_TRUTH_JSON
     ):
         raise ValueError("scenario does not match the supported AUTH-001 fixture contract")
