@@ -457,6 +457,8 @@ def launch_plan(
                 "scheduled task definition retained because its worker may still be active"
             )
         _atomic_json(record_path, record)
+        if record["cleanup_error"] is not None:
+            raise RuntimeError(f"scheduled task deletion failed: {record['cleanup_error']}")
 
 
 def _terminate_started_task(

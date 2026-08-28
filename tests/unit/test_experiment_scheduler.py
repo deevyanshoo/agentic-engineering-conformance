@@ -412,3 +412,28 @@ def test_launch_deletes_exact_task_after_valid_terminal_marker(tmp_path: Path) -
     assert record["deletion_time"] is not None
     assert record["cleanup_deferred"] is None
     assert record["worker_terminal_evidence_time"] is not None
+
+
+class DeletionFailureController(ValidTerminalController):
+    def delete(self, task_name: str) -> None:
+        del task_name
+        raise RuntimeError("scheduler deletion failure")
+
+
+def test_launch_blocks_when_terminal_task_deletion_fails(tmp_path: Path) -> None:
+    plan = _plan(tmp_path)
+    plan_path = plan.output_root / "experiment-plan.json"
+    write_plan(plan_path, plan)
+    controller = DeletionFailureController(plan)
+
+    with pytest.raises(RuntimeError, match="scheduled task deletion failed"):
+        launch_plan(
+            plan_path,
+            controller=controller,  # type: ignore[arg-type]
+            identity_reader=lambda: "DESKTOP\\founder",
+        )
+
+    record = json.loads((plan.output_root / "scheduler-record.json").read_text(encoding="utf-8"))
+    assert record["deletion_time"] is None
+    assert "scheduler deletion failure" in record["cleanup_error"]
+    assert record["terminal_status"] == "COMPLETE"

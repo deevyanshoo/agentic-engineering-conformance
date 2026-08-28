@@ -143,3 +143,13 @@ format/check passed, strict mypy passed for 24 source files, and all 188 tests p
 | M4-D21 | Final deterministic verification | COMPLETE |
 | M4-D22 | Push stacked branch and create draft PR | COMPLETE |
 | M4-D23 | Completion record | COMPLETE |
+
+## Post-completion correction - 2026-08-29
+
+M5 pre-live review identified that `launch_plan` recorded a Task Scheduler deletion failure but
+could still return a successful terminal marker. The completed historical M4 batch is unaffected:
+its task deletion succeeded and independent absence verification remains valid. The owning M4
+launcher now raises after persisting the cleanup error when terminal task deletion fails, and a
+deterministic regression proves that cleanup failure blocks the launcher. This correction changes
+future failure handling only; it does not alter the M4 plan, evidence, results, aggregate, or
+completion claim.
