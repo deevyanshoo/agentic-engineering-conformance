@@ -40,6 +40,19 @@ Inspect the durable repository material before making the change.
 """
 
 
+def auth_fixture_digest() -> str:
+    payload = {
+        "scenario_id": AUTH_SCENARIO_ID,
+        "scenario_version": AUTH_SCENARIO_VERSION,
+        "ground_truth": json.loads(AUTH_GROUND_TRUTH_JSON),
+        "specification": SPECIFICATION,
+        "initial_behavior": {"behavior": "UNSET"},
+        "stale_context": AUTH_PROMPT,
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return "sha256:" + hashlib.sha256(encoded.encode()).hexdigest()
+
+
 @dataclass(frozen=True, slots=True)
 class AuthFixture:
     workspace: Path

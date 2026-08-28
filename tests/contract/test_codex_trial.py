@@ -69,15 +69,24 @@ def test_trial_persists_schema_valid_closed_rescorable_evidence(
         before_execute=lambda _: events.append("preflight"),
     )
 
-    artifacts = run_auth_trial(tmp_path / "runs", adapter)
+    artifacts = run_auth_trial(
+        tmp_path / "runs",
+        adapter,
+        run_id="planned-codex-1",
+        additional_diagnostics={"process-ancestry.json": '{"safe":true}\n'},
+    )
 
     assert events == ["preflight", "execute"]
+    assert artifacts.run_id == "planned-codex-1"
     assert artifacts.result == artifacts.rescored
     assert process.calls == 3
     assert artifacts.evidence_path.exists()
     assert artifacts.manifest_path.exists()
     assert artifacts.raw_jsonl_path.exists()
     assert "private-agent-text" in artifacts.raw_jsonl_path.read_text(encoding="utf-8")
+    assert (artifacts.output_directory / "process-ancestry.json").read_text(
+        encoding="utf-8"
+    ) == '{"safe":true}\n'
     manifest = json.loads(artifacts.manifest_path.read_text(encoding="utf-8"))
     schema = json.loads((ROOT / "schemas/run.schema.json").read_text(encoding="utf-8"))
     Draft202012Validator(schema).validate(manifest)

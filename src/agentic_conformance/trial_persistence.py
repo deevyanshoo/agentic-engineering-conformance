@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import shutil
 import uuid
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -42,6 +43,7 @@ def persist_trial(
     oracles: OracleRegistry,
     raw_diagnostic_name: str,
     raw_diagnostic: str,
+    additional_diagnostics: Mapping[str, str] | None = None,
 ) -> PersistedTrial:
     if record.evidence is None:
         raise ValueError("a persisted trial requires rescorable evidence")
@@ -52,6 +54,11 @@ def persist_trial(
         or Path(raw_diagnostic_name).name != raw_diagnostic_name
     ):
         raise ValueError("trial output names must be single path components")
+
+    diagnostics = dict(additional_diagnostics or {})
+    reserved = {"evidence.json", "run.json", raw_diagnostic_name}
+    if any(not name or Path(name).name != name or name in reserved for name in diagnostics):
+        raise ValueError("additional diagnostic names must be unique safe path components")
 
     output_directory = output_root / run_id
     if output_directory.exists():
@@ -66,6 +73,8 @@ def persist_trial(
     try:
         _atomic_write(staged_evidence, record.evidence.to_json() + "\n")
         _atomic_write(staged_raw, raw_diagnostic)
+        for name, value in diagnostics.items():
+            _atomic_write(staging / name, value)
         reloaded = EvidenceBundle.from_json(staged_evidence.read_text(encoding="utf-8"))
         rescored = rescore(scenario, reloaded, oracles)
         if rescored != record.result:

@@ -70,6 +70,22 @@ dump is persisted.
 - M4 records `NEUTRAL_AUTONOMOUS_BASELINE`, actual limits, and observations only. N=3 per host
   supports no winner, ranking, pass-rate inference, or statistical superiority claim.
 
+## Deterministic implementation evidence
+
+The immutable-plan/schema layer binds the clean Git revision, AUTH-001 definition and fixture
+digests, both adapter/CLI/model/config/sandbox identities, six safe run IDs in alternating order,
+BLACK_BOX/RESTRICTED policies, zero retries, output containment, and a canonical self-digest.
+The worker records an allowlisted environment and best-effort worker/host ancestry, rejects direct
+coding-agent ancestry or missing scheduler evidence before host setup, repeats both host probes in
+its own context, and verifies clean source state before, between, and after trials. Existing
+adapters, Runner, scenario oracle, atomic trial persistence, and offline rescore remain authoritative.
+
+The Task Scheduler controller emits an on-demand current-user `InteractiveToken` /
+`LeastPrivilege` XML action with literal command, arguments, and working directory. It refuses task
+name collisions, stores no password, has no direct/background fallback, polls at a bounded interval,
+and deletes the exact task in cleanup. Focused M4 gate: 37 tests passed. Full local regression: Ruff
+format/check passed, strict mypy passed for 24 source files, and all 176 tests passed.
+
 ## Findings, verification, and blockers
 
 - No current blocker.
@@ -83,15 +99,15 @@ dump is persisted.
 | Node | Deliverable | Status |
 | --- | --- | --- |
 | M4-D1 | Repository/PR/worktree reconciliation | COMPLETE |
-| M4-D2 | Stacked branch/worktree and durable execution record | IN_PROGRESS |
-| M4-D3 | Neutral operator/worker architecture | PENDING |
-| M4-D4 | Sanitized environment envelope | PENDING |
-| M4-D5 | Process-ancestry validity detection | PENDING |
-| M4-D6 | Immutable experiment-plan contract | PENDING |
-| M4-D7 | Autonomous worker | PENDING |
-| M4-D8 | Task Scheduler launcher/controller | PENDING |
-| M4-D9 | Deterministic aggregate reader | PENDING |
-| M4-D10 | Deterministic M1-M4 regression tests | PENDING |
+| M4-D2 | Stacked branch/worktree and durable execution record | COMPLETE |
+| M4-D3 | Neutral operator/worker architecture | COMPLETE |
+| M4-D4 | Sanitized environment envelope | COMPLETE |
+| M4-D5 | Process-ancestry validity detection | COMPLETE |
+| M4-D6 | Immutable experiment-plan contract | COMPLETE |
+| M4-D7 | Autonomous worker | COMPLETE |
+| M4-D8 | Task Scheduler launcher/controller | COMPLETE |
+| M4-D9 | Deterministic aggregate reader | COMPLETE |
+| M4-D10 | Deterministic M1-M4 regression tests | COMPLETE |
 | M4-D11 | Independent pre-live review | PENDING |
 | M4-D12 | Pre-live remediation | PENDING |
 | M4-D13 | Final deterministic pre-live verification and clean commit | PENDING |

@@ -242,6 +242,10 @@ class ClaudeAdapter(Adapter):
         self._runs: dict[str, _RunState] = {}
         self.last_observation: ClaudeRunObservation | None = None
 
+    @property
+    def probed_cli_version(self) -> str | None:
+        return self._cli_version
+
     def probe(self) -> frozenset[str]:
         if self._probed_capabilities is not None:
             return self._probed_capabilities

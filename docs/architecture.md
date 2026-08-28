@@ -82,6 +82,27 @@ AUTH-001 remains BLACK_BOX and scoreable from benchmark E0 plus externally obser
 behavior. Claude E2 and E4 are optional diagnostics and cannot determine the score. The adapter
 emits no `control_event`, so an unguarded correct behavior remains BEHAVIORAL_PASS.
 
+## M4 neutral autonomous experiments
+
+M4 adds a digest-bound batch plan, a dedicated worker entry point, passive process-ancestry
+observation, a deterministic non-ranking aggregate, and a Windows Task Scheduler controller.
+The plan fixes the clean benchmark revision, AUTH-001 scenario and fixture digests, adapter/CLI/model
+and sandbox identities, exactly six alternating run IDs, BLACK_BOX observation, RESTRICTED network
+policy, and zero retries. The worker rejects binding drift, source dirtiness, direct coding-agent
+ancestry, or missing scheduler/service ancestry before live execution.
+
+The scheduler action runs as the current interactive Windows user with `InteractiveToken` and
+`LeastPrivilege`; it has no stored password, highest-privilege setting, shell wrapper, or direct
+subprocess fallback. Task Scheduler provides a distinct OS/service launch context, not complete
+environmental independence: the user profile, machine, network, installed binaries, authentication
+stores, and managed host policy remain shared.
+
+Each evidence-bearing trial continues through the existing Adapter, Runner, scenario oracle, atomic
+persistence, and offline rescore path. Host process ancestry is a safe diagnostic sidecar. Agent
+prose remains E4/raw diagnostic material and cannot affect the E0+E1 AUTH-001 score. Aggregation
+reports per-host counts and observed identities only; it has no composite score, winner, ranking,
+or statistical claim.
+
 ## Limitations
 
 M1 uses deterministic synthetic fixtures and a fake adapter. M2 adds one stochastic Codex trial;
@@ -89,3 +110,6 @@ M3 adds one stochastic Claude trial. These milestones do not establish external-
 stochastic reproducibility, security against a hostile operating system, or correctness of the
 provisional taxonomy. The individual N=1 host observations do not support pass rates, rankings,
 or Codex-versus-Claude performance claims.
+M4's N=3-per-host scheduled batch tests the neutral worker and repeatability mechanics only; it
+still cannot support host ranking, pass-rate estimation, statistical superiority, or attribution
+of differences to process nesting.

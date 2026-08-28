@@ -212,6 +212,7 @@ def test_exact_command_evidence_and_behavioral_scoring(tmp_path: Path) -> None:
     assert "--ask-for-approval" not in command
     assert cwd is not None and not cwd.exists()
     assert adapter.last_observation is not None
+    assert adapter.probed_cli_version == "0.150.1"
     assert adapter.last_observation.thread_id == "thread-1"
     assert not any(hasattr(adapter, name) for name in ("score", "classify", "pass_fail"))
 
