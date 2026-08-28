@@ -101,7 +101,7 @@ The defect belongs to M4's generic neutral worker. M4 commit
 system temp path while retaining project-owned result output. M4 verification passed with 191
 tests. M5 propagated the fix in merge `23b35df968de431cb556a141acfbaaeb3398ce17`, preserving the
 bound live-plan revision and historical terminal artifacts. No rerun occurred. Independent
-post-run review is the active node.
+post-run review returned POST-RUN GO with no blocking finding. Evidence: reports/m5-post-run-review.md.
 
 ## Execution DAG
 
@@ -124,8 +124,8 @@ post-run review is the active node.
 | M5-D13 | Neutral autonomous scheduled batch | COMPLETE - 12 terminal invalid slots |
 | M5-D14 | Offline rescoring verification | COMPLETE - no evidence-bearing executed slot |
 | M5-D15 | Paired aggregate and construct interpretation | COMPLETE - CASE 5/inconclusive |
-| M5-D16 | Independent post-run review | PENDING |
-| M5-D17 | Finding remediation | PENDING |
+| M5-D16 | Independent post-run review | COMPLETE - POST-RUN GO |
+| M5-D17 | Finding remediation | COMPLETE - no blocking finding |
 | M5-D18 | Final deterministic verification | PENDING |
 | M5-D19 | Push stacked branch and create draft PR | PENDING |
 | M5-D20 | Completion record | PENDING |
