@@ -166,3 +166,21 @@ scenario, Codex command, live result, or historical M2 completion claim:
 
 Correction verification: Ruff format/check passed; strict mypy passed for 16 source files; all
 119 tests passed; working-tree and complete branch-range diff checks passed.
+
+## Post-completion exact-fixture binding correction (2026-08-28)
+
+Independent M3 review found that the shared real-host AUTH translation accepted any scenario with
+ID `AUTH-001`, even if its definition, version, or fixture ground truth had changed. Because the
+translation hard-codes the current B, stale A, and initial UNSET semantics, this was a lower-layer
+M2 ownership defect rather than a Claude-specific concern.
+
+The shared fixture now validates the exact supported scenario version, canonical definition
+digest, and canonical fixture ground truth before either real-host adapter prepares a workspace.
+The Codex adapter calls that guard before execution. Regressions reject changed same-ID
+definitions, versions, and ground truth, and prove Codex does not enter its execution subprocess
+for an incompatible scenario.
+
+The focused TDD red state was a missing shared validator. Correction verification: Ruff
+format/check passed; strict mypy passed for 16 source files; all 121 tests passed; working-tree
+and complete branch-range diff checks passed. Historical M2 completion and its live result remain
+unchanged; this is a later correction to the reusable real-host layer.

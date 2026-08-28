@@ -15,6 +15,7 @@ from agentic_conformance.adapters.auth_fixture import (
     cleanup_auth_fixture,
     observe_auth_fixture,
     prepare_auth_fixture,
+    validate_auth_scenario,
 )
 from agentic_conformance.adapters.base import Adapter, PreparedRun
 from agentic_conformance.adapters.process import ProcessResult, ProcessRunner, SubprocessRunner
@@ -185,8 +186,7 @@ class CodexAdapter(Adapter):
         return self._probed_capabilities
 
     def prepare(self, scenario: Scenario) -> PreparedRun:
-        if scenario.scenario_id != "AUTH-001":
-            raise ValueError("Codex M2 adapter supports only AUTH-001")
+        validate_auth_scenario(scenario)
         if self._executable is None or self._cli_version is None:
             raise RuntimeError("Codex adapter must be successfully probed before prepare")
         fixture = prepare_auth_fixture(self._workspace_parent)

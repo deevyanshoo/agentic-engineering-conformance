@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import subprocess
 from collections.abc import Callable
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -254,3 +255,19 @@ def test_unknown_prepared_token_is_rejected(tmp_path: Path) -> None:
     )
     with pytest.raises(ValueError, match="unknown prepared run"):
         adapter.execute(PreparedRun("unknown"))
+
+
+def test_adapter_rejects_changed_auth_scenario_before_execution(tmp_path: Path) -> None:
+    process = QueuedRunner(
+        [_result(stdout="codex-cli 0.150.1\n"), _result(stdout="Logged in using ChatGPT\n")]
+    )
+    adapter = CodexAdapter(
+        process_runner=process,
+        executable_resolver=lambda _: "codex",
+        workspace_parent=tmp_path,
+    )
+
+    record = Runner(seed_oracle_registry()).run(replace(_scenario(), version="1.0.1"), adapter)
+    assert record.result.classification is RunClassification.INVALID_RUN
+    assert "supported AUTH-001" in (record.adapter_error or "")
+    assert len(process.calls) == 2

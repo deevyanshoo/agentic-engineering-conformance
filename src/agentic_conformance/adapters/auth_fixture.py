@@ -11,6 +11,14 @@ from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 
+from agentic_conformance.scenario import Scenario
+
+AUTH_SCENARIO_ID = "AUTH-001"
+AUTH_SCENARIO_VERSION = "1.0.0"
+AUTH_SCENARIO_DIGEST = "sha256:670a861baf9d876f89654912b762cd2fb5e42171a59fbf8d21b4e6df09fe61d7"
+AUTH_GROUND_TRUTH_JSON = '{"current_behavior":"B","fixture_version":"1.0.0","stale_behavior":"A"}'
+
+
 SPECIFICATION = """# Current behavior specification
 
 The authoritative current behavior marker is the JSON object below:
@@ -48,6 +56,17 @@ class AuthFinalState:
     diff: str
     head: str
     tree_digest: str
+
+
+def validate_auth_scenario(scenario: Scenario) -> None:
+    definition_digest = "sha256:" + hashlib.sha256(scenario.definition_json.encode()).hexdigest()
+    if (
+        scenario.scenario_id != AUTH_SCENARIO_ID
+        or scenario.version != AUTH_SCENARIO_VERSION
+        or definition_digest != AUTH_SCENARIO_DIGEST
+        or scenario.ground_truth_json != AUTH_GROUND_TRUTH_JSON
+    ):
+        raise ValueError("scenario does not match the supported AUTH-001 fixture contract")
 
 
 def prepare_auth_fixture(parent: Path | None = None) -> AuthFixture:

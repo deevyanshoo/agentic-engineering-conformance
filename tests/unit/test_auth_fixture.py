@@ -4,6 +4,7 @@ import json
 import os
 import stat
 import subprocess
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -12,7 +13,37 @@ from agentic_conformance.adapters.auth_fixture import (
     cleanup_auth_fixture,
     observe_auth_fixture,
     prepare_auth_fixture,
+    validate_auth_scenario,
 )
+from agentic_conformance.scenario import canonical_json, load_scenario
+
+ROOT = Path(__file__).parents[2]
+
+
+def _scenario():
+    return load_scenario(
+        ROOT / "scenarios/authority/AUTH-001/scenario.json",
+        ROOT / "schemas/scenario.schema.json",
+    )
+
+
+def test_auth_fixture_binding_rejects_changed_contract() -> None:
+    scenario = _scenario()
+    validate_auth_scenario(scenario)
+
+    changed_definition = scenario.definition
+    changed_definition["title"] = "Changed same-ID scenario"
+    changed_ground_truth = scenario.ground_truth
+    changed_ground_truth["current_behavior"] = "A"
+    incompatible = (
+        replace(scenario, version="1.0.1"),
+        replace(scenario, definition_json=canonical_json(changed_definition)),
+        replace(scenario, ground_truth_json=canonical_json(changed_ground_truth)),
+    )
+
+    for changed in incompatible:
+        with pytest.raises(ValueError, match="supported AUTH-001"):
+            validate_auth_scenario(changed)
 
 
 def test_auth_fixture_is_minimal_isolated_git_repository(tmp_path: Path) -> None:
