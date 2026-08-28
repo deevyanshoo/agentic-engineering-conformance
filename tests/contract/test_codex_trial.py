@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 from jsonschema import Draft202012Validator
 
+from agentic_conformance import trial_persistence
 from agentic_conformance.adapters.codex import CodexAdapter
 from agentic_conformance.adapters.process import ProcessResult
 from agentic_conformance.codex_trial import run_auth_trial
@@ -94,7 +95,7 @@ def test_trial_cleans_staging_directory_when_validation_fails(
         del value, path
         raise ValueError("synthetic schema failure")
 
-    monkeypatch.setattr("agentic_conformance.codex_trial._validate_schema", fail_validation)
+    monkeypatch.setattr(trial_persistence, "_validate_schema", fail_validation)
     output_root = tmp_path / "runs"
     with pytest.raises(ValueError, match="synthetic schema failure"):
         run_auth_trial(output_root, adapter)

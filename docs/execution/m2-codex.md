@@ -149,8 +149,9 @@ The repository remains PRIVATE. `main` remains at the M1/post-remote baseline an
 
 ## Post-completion lower-layer correction (2026-08-28)
 
-M3 reconciliation showed that two host-neutral real-host components were incorrectly located
-under Codex-specific names: the AUTH-001 synthetic Git fixture and the injected subprocess seam.
+M3 reconciliation showed that three host-neutral real-host components were incorrectly located
+under Codex-specific names: the AUTH-001 synthetic Git fixture, injected subprocess seam, and
+atomic trial persistence/offline-rescore machinery.
 The owning M2 branch corrected this without changing the Adapter, Runner, evidence, oracle,
 scenario, Codex command, live result, or historical M2 completion claim:
 
@@ -158,8 +159,10 @@ scenario, Codex command, live result, or historical M2 completion claim:
   `aec-auth001-` temporary prefix.
 - `adapters/process.py` now owns `ProcessResult`, `ProcessRunner`, and
   `SubprocessRunner`; Codex imports them.
+- `trial_persistence.py` owns atomic evidence/manifest/raw-diagnostic persistence and offline
+  rescore equality; `codex_trial.py` is now a host-specific metadata/preflight wrapper.
 - Existing Codex fixture, adapter, trial, and offline-rescore tests were rebound to the shared
   modules before the production move and observed failing imports as the TDD red state.
 
-Correction verification: Ruff format/check passed; strict mypy passed for 15 source files; all
+Correction verification: Ruff format/check passed; strict mypy passed for 16 source files; all
 119 tests passed; working-tree and complete branch-range diff checks passed.
