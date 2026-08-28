@@ -86,3 +86,12 @@ findings were remediated on the owning branches described below.
   committed remediation head.
 
 No live rerun occurred. No result was changed to improve the recorded Claude outcome.
+
+## Independent closure confirmation
+
+The same read-only reviewer examined owning base
+`ccae3930d2e758bc26676eeeccae36290eda3ab2` through remediation head
+`ba7062841be2ff9577f27a35f7d475dcbd7d9a92` and confirmed R1-R6 closed with no
+new current-scope blocker. It independently reproduced 33 focused passes, 143 full-suite passes,
+Ruff format/check, strict mypy for 18 source files, both diff checks, a clean worktree, and the
+reported live argv/digests. It changed no state and did not invoke Claude.

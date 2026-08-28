@@ -116,10 +116,10 @@ contamination limitation and is not credited as a benchmark control.
 | M3-D10 | Full local regression gate | COMPLETE |
 | M3-D11 | Exactly one live Claude AUTH-001 trial | COMPLETE |
 | M3-D12 | Stored-evidence rescore | COMPLETE |
-| M3-D13-D14 | Independent review and remediation | PENDING |
+| M3-D13-D14 | Independent review and remediation | COMPLETE |
 | M3-D15 | Final local deterministic verification | PENDING |
 | M3-D16 | Push stacked branch and draft PR | PENDING |
 | M3-D17 | Completion record | PENDING |
 
-The single live and offline-rescore nodes are complete. M3 resumes at independent read-only
-review, M3-D13; remediation, final verification, publication-state, and completion nodes remain.
+Independent review and remediation are complete with no blocking current-scope finding. M3
+resumes at final local verification, M3-D15; publication-state and completion nodes remain.
