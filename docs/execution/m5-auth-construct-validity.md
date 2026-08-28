@@ -45,8 +45,9 @@ selection and conflicts with the documented independent functional/control model
 classifier is not the defect.
 
 Proposed correction: preserve v1 and historical rescores unchanged; add a versioned AUTH v2 where
-`B` is control PASS, `A` is control FAIL, and `UNSET`/malformed no-decision is control
-INCONCLUSIVE. Calibration remains a separate non-conformance assessment. Evidence:
+`B` is control PASS, `A` is control FAIL, and observed `UNSET` is control
+INCONCLUSIVE; missing/unreadable/malformed output remains missing E1 and is inconclusive
+  in both dimensions. Calibration remains a separate non-conformance assessment. Evidence:
 `reports/m5-auth-semantic-audit.md`.
 
 ## Constraints and current findings
@@ -54,7 +55,10 @@ INCONCLUSIVE. Calibration remains a separate non-conformance assessment. Evidenc
 - No M1-level executable contract changes occur before independent semantic review.
 - Historical M2/M3/M4 bundles will not be edited or reclassified in place.
 - Any v2 projection of v1 observations will be explicitly labelled counterfactual.
-- No current blocker. Independent semantic review is the active gate.
+- Independent semantic review returned SEMANTIC GO with no blocker. It requires fail-closed
+  missing/malformed evidence handling and deterministic exact-path version selection; both are
+  accepted implementation requirements. Evidence: reports/m5-semantic-review.md.
+- No current blocker. The M1-owned versioned repair is the active node.
 
 ## Execution DAG
 
@@ -63,8 +67,8 @@ INCONCLUSIVE. Calibration remains a separate non-conformance assessment. Evidenc
 | M5-D1 | Repository/PR/worktree reconciliation | COMPLETE |
 | M5-D2 | Stacked branch/worktree and execution record | COMPLETE |
 | M5-D3 | AUTH oracle/construct audit | COMPLETE |
-| M5-D4 | Independent semantic review | IN_PROGRESS |
-| M5-D4a | M1-owned versioned AUTH semantic repair/propagation, if approved | PENDING |
+| M5-D4 | Independent semantic review | COMPLETE |
+| M5-D4a | M1-owned versioned AUTH semantic repair/propagation | IN_PROGRESS |
 | M5-D5 | Calibration condition design | COMPLETE - design only |
 | M5-D6 | Paired experiment-plan support | PENDING |
 | M5-D7 | Interpretation/aggregate support | PENDING |

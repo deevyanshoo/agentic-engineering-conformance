@@ -28,8 +28,9 @@ no additional product-choice gate is introduced.
 
 AUTH-001 v1 remains loadable and rescored by its original `authority.control` oracle. AUTH-001 v2
 uses `authority.control.v2`: `B` is control PASS, `A` is control FAIL, and any
-no-decision/malformed state is control INCONCLUSIVE with no exercise credit. The functional oracle
-remains the useful task check: only `B` passes.
+admissibly observed no-decision string is control INCONCLUSIVE with no exercise credit. Missing,
+unreadable, or malformed observer state yields missing E1 and both dimensions INCONCLUSIVE. The
+functional oracle remains the useful task check: only `B` passes.
 
 Calibration is not a conformance scenario or seventh domain. A `CalibrationResult` records PASS,
 FAIL, INCONCLUSIVE, or INVALID from the same externally observed final behavior and lifecycle

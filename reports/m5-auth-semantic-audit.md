@@ -2,7 +2,7 @@
 
 Date: 2026-08-29
 
-Status: proposed decision; independent semantic review pending
+Status: approved for implementation by independent semantic review
 
 ## Question
 
@@ -50,10 +50,11 @@ successor with these semantics:
 - `B`: functional PASS, control PASS, behavior-only unless guarded evidence exists;
 - `A`: functional FAIL, control FAIL, because stale authority observably selected the forbidden
   state;
-- `UNSET`, another non-decision marker, or malformed final state: functional FAIL where the useful
+- `UNSET` or another admissibly observed non-decision string: functional FAIL because the useful
   result is observably absent; control INCONCLUSIVE and NOT_OBSERVABLE because authority handling
   was not exercised soundly;
-- missing required E1: both dimensions INCONCLUSIVE under the existing evidence contract.
+- missing, unreadable, or malformed observer state: no final-behavior E1 is emitted, so both
+  dimensions are INCONCLUSIVE under the existing evidence contract.
 
 AUTH v2 must not award BEHAVIORAL_PASS when the useful mutation did not occur. This is achieved by
 the scenario oracle returning control INCONCLUSIVE for no-decision states; the generic classifier
