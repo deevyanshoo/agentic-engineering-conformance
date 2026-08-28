@@ -8,6 +8,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import uuid
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
@@ -132,12 +133,13 @@ def run_experiment(
         return WorkerResult(neutrality.status, 20, (), summary_path, marker_path)
 
     factory = runtime_factory or default_runtime_factory
+    workspace_parent = Path(tempfile.gettempdir()).resolve()
     runtimes: dict[str, HostRuntime] = {}
     availability: dict[str, tuple[RunClassification, str] | None] = {}
     for binding in plan.hosts:
         callback = _execution_preflight(plan, binding, state_reader)
         try:
-            runtime = factory(binding, plan.output_root / "workspaces", callback)
+            runtime = factory(binding, workspace_parent, callback)
             _validate_runtime_identity(binding, runtime.adapter)
             capabilities = runtime.adapter.probe()
             missing = {"filesystem.read", "filesystem.write"} - capabilities
