@@ -25,7 +25,7 @@ or merging.
 - PR #2: draft/open/unmerged, `m3/claude-adapter` at
   `782958075e161fc39724deedf9b55872ab36b6cf`, targeting M2.
 - PR #3: draft/open/unmerged, `m4/neutral-experiments` at
-  `0dc6700090b0e89465bce3e0700ddeb1b28d8f2f`, targeting M3.
+  `3bcc4c458d6e49a4218454be6b68f5a7ffb82e49`, targeting M3.
 - M5 branch `m5/auth-construct-validity` and its isolated ignored worktree were originally created
   from M4 head `ae7768474a4e6cf4c1c07432076453eff8bce450`, then rebased onto the corrected
   current M4 head above. Main remains unchanged; prior feature branches changed only through the
@@ -85,9 +85,23 @@ includes calibration FAIL paired with AUTH stale `A` or no-decision. That defini
 CASE 5 remains reserved for invalid/inconclusive calibration, and unmatched states remain
 `OBSERVED_VARIATION`. A new calibration-FAIL/AUTH-pass variation case prevents another catch-all.
 
-Current pre-live gate: Ruff format/check passed, strict mypy passed for 26 source files, all 233
-tests passed, and both stacked/main branch-range diff checks passed. A clean-head follow-up review
-is pending before live-plan preparation.
+The final pre-live gate passed at revision `11c4b59ef58c723013347c91727a7c4057d1e13b`:
+Ruff format/check, strict mypy for 26 source files, all 233 tests, and both branch-range diff checks.
+Independent clean-head follow-up returned PRE-LIVE GO.
+
+The bound twelve-slot scheduled batch completed as a terminal invalid experiment before any model
+process launched: all fixture Git preparations hit the same Windows path-length failure. Codex and
+Claude each recorded three `CALIBRATION_INVALID` plus three AUTH `INVALID_RUN` slots; all pairs are
+CASE 5 and construct interpretation is inconclusive. Zero retries means no replacement batch is
+permitted. Digests and scheduler deletion were independently validated. Evidence:
+`reports/m5-auth-construct-validity.md`.
+
+The defect belongs to M4's generic neutral worker. M4 commit
+`3bcc4c458d6e49a4218454be6b68f5a7ffb82e49` moves ephemeral fixture roots to the short current-user
+system temp path while retaining project-owned result output. M4 verification passed with 191
+tests. M5 propagated the fix in merge `23b35df968de431cb556a141acfbaaeb3398ce17`, preserving the
+bound live-plan revision and historical terminal artifacts. No rerun occurred. Independent
+post-run review is the active node.
 
 ## Execution DAG
 
@@ -106,10 +120,10 @@ is pending before live-plan preparation.
 | M5-D9 | Independent pre-live review | COMPLETE - PRE-LIVE GO |
 | M5-D10 | Pre-live remediation | COMPLETE - propagated and verified |
 | M5-D11 | Final deterministic pre-live gate | COMPLETE - 233 passed |
-| M5-D12 | Immutable twelve-trial plan | PENDING |
-| M5-D13 | Neutral autonomous scheduled batch | PENDING |
-| M5-D14 | Offline rescoring verification | PENDING |
-| M5-D15 | Paired aggregate and construct interpretation | PENDING |
+| M5-D12 | Immutable twelve-trial plan | COMPLETE |
+| M5-D13 | Neutral autonomous scheduled batch | COMPLETE - 12 terminal invalid slots |
+| M5-D14 | Offline rescoring verification | COMPLETE - no evidence-bearing executed slot |
+| M5-D15 | Paired aggregate and construct interpretation | COMPLETE - CASE 5/inconclusive |
 | M5-D16 | Independent post-run review | PENDING |
 | M5-D17 | Finding remediation | PENDING |
 | M5-D18 | Final deterministic verification | PENDING |
