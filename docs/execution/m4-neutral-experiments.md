@@ -153,3 +153,12 @@ launcher now raises after persisting the cleanup error when terminal task deleti
 deterministic regression proves that cleanup failure blocks the launcher. This correction changes
 future failure handling only; it does not alter the M4 plan, evidence, results, aggregate, or
 completion claim.
+## Second post-completion correction - 2026-08-29
+
+The terminal M5 paired batch exposed a Windows path-length defect in the generic neutral worker:
+fixture repositories inherited the deeply nested project result path, and Git object creation could
+fail before a host process launched. The owning worker now places only ephemeral fixture
+repositories beneath the current-user system temporary directory while keeping all evidence and
+result artifacts under the plan-bound project output root. Adapter cleanup remains responsible for
+each unique fixture directory. A deterministic worker regression proves the supplied fixture
+parent is short and outside the result tree. The historical M4 plan and results are unchanged.

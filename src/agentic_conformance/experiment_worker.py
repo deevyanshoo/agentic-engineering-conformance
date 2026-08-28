@@ -8,6 +8,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import uuid
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
@@ -149,6 +150,7 @@ def run_experiment(
         return WorkerResult(neutrality.status, 20, (), summary_path, marker_path)
 
     factory = runtime_factory or default_runtime_factory
+    workspace_parent = Path(tempfile.gettempdir()).resolve()
     runtimes: dict[tuple[str, AuthTreatment], HostRuntime] = {}
     availability: dict[tuple[str, AuthTreatment], tuple[RunClassification, str] | None] = {}
     runtime_specs: list[tuple[HostBinding, AuthTreatment]] = []
@@ -161,12 +163,7 @@ def run_experiment(
         key = (binding.name, treatment)
         callback = _execution_preflight(plan, binding, state_reader)
         try:
-            runtime = factory(
-                binding,
-                plan.output_root / "workspaces" / binding.name / treatment.value.casefold(),
-                callback,
-                treatment,
-            )
+            runtime = factory(binding, workspace_parent, callback, treatment)
             _validate_runtime_identity(binding, runtime.adapter)
             if getattr(runtime.adapter, "treatment", None) is not treatment:
                 raise RuntimeError("adapter treatment differs from immutable trial binding")

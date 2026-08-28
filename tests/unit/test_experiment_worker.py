@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import tempfile
 from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
@@ -540,3 +541,34 @@ def test_paired_worker_executes_exactly_twelve_with_distinct_treatments(
 
     marker = json.loads(result.marker_path.read_text(encoding="utf-8"))
     assert validate_terminal_marker(plan, marker) == marker
+
+
+def test_neutral_worker_keeps_fixture_paths_out_of_deep_result_tree(tmp_path: Path) -> None:
+    plan = _paired_plan(tmp_path)
+    plan_path = plan.output_root / "experiment-plan.json"
+    write_plan(plan_path, plan)
+    processes = {"codex": HostProcess("codex"), "claude": HostProcess("claude")}
+    delegate = _factory(processes)
+    observed_parents: list[Path] = []
+
+    def capture(
+        binding: HostBinding,
+        workspace_parent: Path,
+        before_execute: Callable[[object], None],
+        treatment: AuthTreatment,
+    ) -> HostRuntime:
+        observed_parents.append(workspace_parent)
+        return delegate(binding, workspace_parent, before_execute, treatment)
+
+    result = run_experiment(
+        plan_path,
+        plan.plan_digest,
+        ancestry_reader=_neutral_ancestry,
+        runtime_factory=capture,
+        source_state_reader=lambda _: (plan.benchmark_revision, ()),
+        environment_reader=lambda: {"os": "nt", "python": "test"},
+    )
+
+    assert result.status == "COMPLETE"
+    assert observed_parents == [Path(tempfile.gettempdir()).resolve()] * 4
+    assert all(plan.output_root not in parent.parents for parent in observed_parents)
