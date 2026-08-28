@@ -133,7 +133,10 @@
         "executable",
         "requested_model",
         "config_digest",
-        "sandbox_policy"
+        "sandbox_policy",
+        "auth_mode",
+        "auth_provider",
+        "subscription_type"
       ],
       "properties": {
         "name": {
@@ -164,6 +167,21 @@
         },
         "sandbox_policy": {
           "type": "string",
+          "minLength": 1
+        },
+        "auth_mode": {
+          "type": "string",
+          "minLength": 1
+        },
+        "auth_provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subscription_type": {
+          "type": [
+            "string",
+            "null"
+          ],
           "minLength": 1
         }
       }

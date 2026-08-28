@@ -30,6 +30,9 @@ def _valid() -> dict[str, Any]:
                 "requested_model": f"{host}-model",
                 "config_digest": "sha256:" + "d" * 64,
                 "sandbox_policy": f"{host}-restricted-workspace",
+                "auth_mode": "chatgpt" if host == "codex" else "claude.ai",
+                "auth_provider": "openai" if host == "codex" else "firstParty",
+                "subscription_type": None if host == "codex" else "pro",
             }
         )
     order = (("codex", 1), ("claude", 1), ("codex", 2), ("claude", 2), ("codex", 3), ("claude", 3))

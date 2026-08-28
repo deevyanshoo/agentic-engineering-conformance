@@ -24,7 +24,8 @@ class TrialOutcome:
     control: Outcome
     limitations: tuple[str, ...]
     cli_version: str | None
-    model_identifier: str | None
+    requested_model: str
+    observed_model_identifier: str | None
     config_digest: str
     evidence_digest: str | None
     manifest_digest: str | None
@@ -46,7 +47,8 @@ class TrialOutcome:
         control: Outcome,
         limitations: tuple[str, ...],
         cli_version: str | None,
-        model_identifier: str | None,
+        requested_model: str,
+        observed_model_identifier: str | None,
         config_digest: str,
         evidence_digest: str | None,
         manifest_digest: str | None,
@@ -64,7 +66,8 @@ class TrialOutcome:
             control,
             limitations,
             cli_version,
-            model_identifier,
+            requested_model,
+            observed_model_identifier,
             config_digest,
             evidence_digest,
             manifest_digest,
@@ -85,7 +88,8 @@ class TrialOutcome:
             "control": self.control.value,
             "limitations": list(self.limitations),
             "cli_version": self.cli_version,
-            "model_identifier": self.model_identifier,
+            "requested_model": self.requested_model,
+            "observed_model_identifier": self.observed_model_identifier,
             "config_digest": self.config_digest,
             "evidence_digest": self.evidence_digest,
             "manifest_digest": self.manifest_digest,
@@ -109,6 +113,10 @@ class TrialOutcome:
             raise ValueError("trial outcome dimensions do not match classification")
         if not not_run and Outcome.NOT_RUN in {self.functional, self.control}:
             raise ValueError("executed trial outcome cannot contain NOT_RUN")
+        if not self.requested_model:
+            raise ValueError("trial outcome requested model is required")
+        if not_run and self.observed_model_identifier is not None:
+            raise ValueError("non-run trial cannot claim an observed model identity")
         if self.classification is RunClassification.FAIL and self.control is not Outcome.FAIL:
             raise ValueError("FAIL trial outcome requires control FAIL")
         if (
@@ -146,7 +154,8 @@ class TrialOutcome:
             control=Outcome(_string(value, "control")),
             limitations=tuple(cast(list[str], limitations)),
             cli_version=_optional_string(value, "cli_version"),
-            model_identifier=_optional_string(value, "model_identifier"),
+            requested_model=_string(value, "requested_model"),
+            observed_model_identifier=_optional_string(value, "observed_model_identifier"),
             config_digest=_string(value, "config_digest"),
             evidence_digest=_optional_string(value, "evidence_digest"),
             manifest_digest=_optional_string(value, "manifest_digest"),
@@ -190,8 +199,13 @@ def build_batch_summary(plan: ExperimentPlan, outcomes: tuple[TrialOutcome, ...]
             "cli_versions": sorted(
                 {outcome.cli_version for outcome in selected if outcome.cli_version}
             ),
-            "model_identifiers": sorted(
-                {outcome.model_identifier for outcome in selected if outcome.model_identifier}
+            "requested_models": sorted({outcome.requested_model for outcome in selected}),
+            "observed_model_identifiers": sorted(
+                {
+                    outcome.observed_model_identifier
+                    for outcome in selected
+                    if outcome.observed_model_identifier
+                }
             ),
             "config_digests": sorted({outcome.config_digest for outcome in selected}),
         }

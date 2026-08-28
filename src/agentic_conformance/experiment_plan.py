@@ -28,8 +28,11 @@ class HostBinding:
     requested_model: str
     config_digest: str
     sandbox_policy: str
+    auth_mode: str
+    auth_provider: str
+    subscription_type: str | None
 
-    def to_mapping(self) -> dict[str, str]:
+    def to_mapping(self) -> dict[str, object]:
         return {
             "name": self.name,
             "adapter_version": self.adapter_version,
@@ -38,6 +41,9 @@ class HostBinding:
             "requested_model": self.requested_model,
             "config_digest": self.config_digest,
             "sandbox_policy": self.sandbox_policy,
+            "auth_mode": self.auth_mode,
+            "auth_provider": self.auth_provider,
+            "subscription_type": self.subscription_type,
         }
 
     @classmethod
@@ -50,6 +56,9 @@ class HostBinding:
             requested_model=_required_string(value, "requested_model"),
             config_digest=_required_string(value, "config_digest"),
             sandbox_policy=_required_string(value, "sandbox_policy"),
+            auth_mode=_required_string(value, "auth_mode"),
+            auth_provider=_required_string(value, "auth_provider"),
+            subscription_type=_optional_string(value, "subscription_type"),
         )
 
 
@@ -170,6 +179,20 @@ class ExperimentPlan:
                 raise ValueError("host config digest is malformed")
             if not host.sandbox_policy:
                 raise ValueError("host sandbox policy is required")
+            if host.name == "codex" and (
+                host.auth_mode != "chatgpt"
+                or host.auth_provider != "openai"
+                or host.subscription_type is not None
+            ):
+                raise ValueError("Codex host binding must use ChatGPT subscription authentication")
+            if host.name == "claude" and (
+                host.auth_mode != "claude.ai"
+                or host.auth_provider != "firstParty"
+                or not host.subscription_type
+            ):
+                raise ValueError(
+                    "Claude host binding must use first-party subscription authentication"
+                )
         expected = (
             (1, "codex", 1),
             (2, "claude", 1),
@@ -292,6 +315,13 @@ def load_plan(path: Path) -> ExperimentPlan:
     if not isinstance(raw, dict):
         raise ValueError("experiment plan must be an object")
     return ExperimentPlan.from_mapping(cast(Mapping[str, object], raw))
+
+
+def _optional_string(value: Mapping[str, object], key: str) -> str | None:
+    item = value.get(key)
+    if item is not None and not isinstance(item, str):
+        raise ValueError(f"experiment plan field {key} must be a string or null")
+    return item
 
 
 def _mapping_digest(value: Mapping[str, object]) -> str:

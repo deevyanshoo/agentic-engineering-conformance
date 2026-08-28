@@ -238,6 +238,9 @@ class ClaudeAdapter(Adapter):
         self._before_execute = before_execute
         self._executable: str | None = None
         self._cli_version: str | None = None
+        self._auth_mode: str | None = None
+        self._auth_provider: str | None = None
+        self._subscription_type: str | None = None
         self._probed_capabilities: frozenset[str] | None = None
         self._runs: dict[str, _RunState] = {}
         self.last_observation: ClaudeRunObservation | None = None
@@ -245,6 +248,18 @@ class ClaudeAdapter(Adapter):
     @property
     def probed_cli_version(self) -> str | None:
         return self._cli_version
+
+    @property
+    def probed_auth_mode(self) -> str | None:
+        return self._auth_mode
+
+    @property
+    def probed_auth_provider(self) -> str | None:
+        return self._auth_provider
+
+    @property
+    def probed_subscription_type(self) -> str | None:
+        return self._subscription_type
 
     def probe(self) -> frozenset[str]:
         if self._probed_capabilities is not None:
@@ -287,6 +302,17 @@ class ClaudeAdapter(Adapter):
             if auth_result.returncode != 0:
                 raise RuntimeError("Claude authentication probe failed")
             self._probed_capabilities = frozenset({"filesystem.read", "filesystem.write"})
+            self._auth_mode = (
+                auth.get("authMethod") if isinstance(auth.get("authMethod"), str) else None
+            )
+            self._auth_provider = (
+                auth.get("apiProvider") if isinstance(auth.get("apiProvider"), str) else None
+            )
+            self._subscription_type = (
+                auth.get("subscriptionType")
+                if isinstance(auth.get("subscriptionType"), str)
+                else None
+            )
         else:
             self._probed_capabilities = frozenset()
         return self._probed_capabilities

@@ -84,15 +84,20 @@ The Task Scheduler controller emits an on-demand current-user `InteractiveToken`
 `LeastPrivilege` XML action with literal command, arguments, and working directory. It refuses task
 name collisions, stores no password, has no direct/background fallback, polls at a bounded interval,
 and deletes the exact task in cleanup. Focused M4 gate: 37 tests passed. Full local regression: Ruff
-format/check passed, strict mypy passed for 24 source files, and all 176 tests passed.
+format/check passed, strict mypy passed for 24 source files, and all 188 tests passed after independent-review remediation.
 
 ## Findings, verification, and blockers
 
-- No current blocker.
-- Pre-live and post-run independent review evidence will be added without rewriting earlier
-  history.
-- Scheduled-task registration, execution, cleanup, trial evidence, aggregate digests, and final
-  verification remain pending.
+- Independent pre-live reviewer: Schrodinger, read-only subagent.
+- Initial review found seven VALID_CURRENT_SCOPE blockers and one outcome-persistence question.
+  Closure review found four additional fail-closed/cleanup defects across two passes.
+- All findings were remediated with deterministic regressions. Final verdict: PRE-LIVE GO.
+- Full final pre-live gate: Ruff format check (74 files), Ruff lint, strict mypy (24 source
+  files), 188 tests, and worktree/base-range git diff --check all passed.
+- Detailed evidence and dispositions: reports/m4-pre-live-review.md.
+- No current blocker. No scheduler task or M4 live host call has occurred yet.
+- Scheduled-task registration, execution, cleanup, trial evidence, aggregate digests, post-run
+  review, and final verification remain pending.
 
 ## Execution DAG
 
@@ -108,9 +113,9 @@ format/check passed, strict mypy passed for 24 source files, and all 176 tests p
 | M4-D8 | Task Scheduler launcher/controller | COMPLETE |
 | M4-D9 | Deterministic aggregate reader | COMPLETE |
 | M4-D10 | Deterministic M1-M4 regression tests | COMPLETE |
-| M4-D11 | Independent pre-live review | PENDING |
-| M4-D12 | Pre-live remediation | PENDING |
-| M4-D13 | Final deterministic pre-live verification and clean commit | PENDING |
+| M4-D11 | Independent pre-live review | COMPLETE |
+| M4-D12 | Pre-live remediation | COMPLETE |
+| M4-D13 | Final deterministic pre-live verification and clean commit | COMPLETE |
 | M4-D14 | Register one-time neutral scheduled task | PENDING |
 | M4-D15 | Autonomous six-trial batch | PENDING |
 | M4-D16 | Per-run offline rescore verification | PENDING |

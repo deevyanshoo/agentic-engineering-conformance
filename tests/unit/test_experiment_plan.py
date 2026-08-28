@@ -28,6 +28,9 @@ def _host(name: str) -> HostBinding:
         requested_model=f"{name}-model",
         config_digest="sha256:" + "d" * 64,
         sandbox_policy=f"{name}-restricted-workspace",
+        auth_mode="chatgpt" if name == "codex" else "claude.ai",
+        auth_provider="openai" if name == "codex" else "firstParty",
+        subscription_type=None if name == "codex" else "pro",
     )
 
 
@@ -139,6 +142,13 @@ def test_rejects_trial_order_duplicate_ids_and_output_escape(tmp_path: Path) -> 
     escaped = replace(plan, output_root=plan.source_root.parent / "outside", plan_digest="")
     with pytest.raises(ValueError, match="contained"):
         escaped.validated()
+
+
+def test_rejects_non_subscription_auth_binding(tmp_path: Path) -> None:
+    plan = _plan(tmp_path)
+    invalid_codex = replace(plan.hosts[0], subscription_type="api")
+    with pytest.raises(ValueError, match="ChatGPT subscription"):
+        replace(plan, hosts=(invalid_codex, plan.hosts[1]), plan_digest="").validated()
 
 
 def test_write_requires_bound_output_location(tmp_path: Path) -> None:

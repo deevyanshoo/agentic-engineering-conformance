@@ -1,16 +1,28 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from pathlib import Path
 
 import pytest
 
 from agentic_conformance.adapters.process import ProcessResult
+from agentic_conformance.experiment_aggregate import (
+    TrialOutcome,
+    build_batch_summary,
+    write_outcome,
+    write_summary,
+)
 from agentic_conformance.experiment_plan import HostBinding, build_auth_plan, write_plan
 from agentic_conformance.experiment_scheduler import (
     ScheduledTaskSpec,
     SchedulerController,
+    _timeout_marker,
+    launch_plan,
     render_task_xml,
+    validate_terminal_marker,
 )
+from agentic_conformance.result import Outcome, RunClassification
 
 
 class QueueRunner:
@@ -45,6 +57,9 @@ def _plan(tmp_path: Path):
             f"{name}-model",
             "sha256:" + "c" * 64,
             f"{name}-sandbox",
+            "chatgpt" if name == "codex" else "claude.ai",
+            "openai" if name == "codex" else "firstParty",
+            None if name == "codex" else "pro",
         )
 
     return build_auth_plan(
@@ -72,6 +87,7 @@ def _spec(tmp_path: Path) -> ScheduledTaskSpec:
         python_executable=Path("C:/Python/python.exe"),
         working_directory=plan.source_root,
         plan_path=plan_path,
+        expected_plan_digest=plan.plan_digest,
         created_at="2026-08-28T12:01:00Z",
     )
 
@@ -176,3 +192,223 @@ def test_monitor_timeout_is_bounded(tmp_path: Path) -> None:
             timeout_seconds=2.0,
             poll_seconds=1.0,
         )
+
+
+def test_terminal_marker_rejects_stale_or_unbound_identity(tmp_path: Path) -> None:
+    plan = _plan(tmp_path)
+    marker = {
+        "batch_id": "stale-batch",
+        "plan_digest": plan.plan_digest,
+        "status": "COMPLETE",
+    }
+    with pytest.raises(ValueError, match="immutable experiment plan"):
+        validate_terminal_marker(plan, marker)
+
+
+def test_timeout_marker_preserves_digest_bound_partial_outcome(
+    tmp_path: Path,
+) -> None:
+    plan = _plan(tmp_path)
+    trial = plan.trials[0]
+    outcome = TrialOutcome.create(
+        sequence=trial.sequence,
+        run_id=trial.run_id,
+        host=trial.host,
+        ordinal=trial.ordinal,
+        attempted=False,
+        classification=RunClassification.UNSUPPORTED,
+        functional=Outcome.NOT_RUN,
+        control=Outcome.NOT_RUN,
+        limitations=("host unavailable",),
+        cli_version=plan.hosts[0].cli_version,
+        requested_model=plan.hosts[0].requested_model,
+        observed_model_identifier=None,
+        config_digest=plan.hosts[0].config_digest,
+        evidence_digest=None,
+        manifest_digest=None,
+        rescored_equal=None,
+        process_returncode=None,
+    )
+    write_outcome(plan.output_root / "outcomes" / f"{trial.run_id}.json", outcome)
+    state = {
+        "schema_version": "0.1",
+        "plan_digest": plan.plan_digest,
+        "outcomes": [outcome.to_mapping()],
+    }
+    state_path = plan.output_root / "batch-state.json"
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    state_path.write_text(json.dumps(state), encoding="utf-8")
+
+    marker = _timeout_marker(plan, "bounded timeout")
+
+    assert marker["status"] == "BATCH_TIMEOUT"
+    assert marker["recorded_trials"] == 1
+    assert marker["outcome_digests"] == [outcome.outcome_digest]
+    assert marker["missing_run_ids"] == [trial.run_id for trial in plan.trials[1:]]
+    assert validate_terminal_marker(plan, marker) == marker
+
+
+class TerminationFailureController:
+    def __init__(self) -> None:
+        self.deleted = False
+
+    def register(self, spec: ScheduledTaskSpec) -> Path:
+        path = spec.plan_path.parent / "scheduled-task.xml"
+        path.write_text("<Task />", encoding="utf-8")
+        return path
+
+    def start(self, task_name: str) -> None:
+        del task_name
+
+    def wait(
+        self,
+        task_name: str,
+        marker_path: Path,
+        *,
+        timeout_seconds: float,
+        poll_seconds: float,
+    ) -> dict[str, object]:
+        del task_name, marker_path, timeout_seconds, poll_seconds
+        raise TimeoutError("synthetic bounded timeout")
+
+    def end(self, task_name: str) -> None:
+        del task_name
+        raise RuntimeError("synthetic termination failure")
+
+    def delete(self, task_name: str) -> None:
+        del task_name
+        self.deleted = True
+
+
+def test_launch_retains_task_and_records_blocker_when_termination_fails(
+    tmp_path: Path,
+) -> None:
+    plan = _plan(tmp_path)
+    plan_path = plan.output_root / "experiment-plan.json"
+    write_plan(plan_path, plan)
+    controller = TerminationFailureController()
+
+    with pytest.raises(RuntimeError, match="task definition retained"):
+        launch_plan(
+            plan_path,
+            timeout_seconds=1.0,
+            poll_seconds=0.1,
+            controller=controller,  # type: ignore[arg-type]
+            identity_reader=lambda: "DESKTOP\\founder",
+        )
+
+    assert controller.deleted is False
+    assert not (plan.output_root / "batch-complete.json").exists()
+    record = json.loads((plan.output_root / "scheduler-record.json").read_text(encoding="utf-8"))
+    assert record["terminal_status"] == "BLOCKED_ACTIVE_TASK"
+    assert "termination failure" in record["termination_error"]
+    assert "may still be active" in record["cleanup_deferred"]
+
+
+class ValidTerminalController:
+    def __init__(self, plan) -> None:
+        self.plan = plan
+        self.deleted = False
+
+    def register(self, spec: ScheduledTaskSpec) -> Path:
+        path = spec.plan_path.parent / "scheduled-task.xml"
+        path.write_text("<Task />", encoding="utf-8")
+        return path
+
+    def start(self, task_name: str) -> None:
+        del task_name
+
+    def wait(
+        self,
+        task_name: str,
+        marker_path: Path,
+        *,
+        timeout_seconds: float,
+        poll_seconds: float,
+    ) -> dict[str, object]:
+        del task_name, timeout_seconds, poll_seconds
+        outcomes = []
+        for trial in self.plan.trials:
+            binding = next(item for item in self.plan.hosts if item.name == trial.host)
+            outcome = TrialOutcome.create(
+                sequence=trial.sequence,
+                run_id=trial.run_id,
+                host=trial.host,
+                ordinal=trial.ordinal,
+                attempted=False,
+                classification=RunClassification.UNSUPPORTED,
+                functional=Outcome.NOT_RUN,
+                control=Outcome.NOT_RUN,
+                limitations=("host unavailable",),
+                cli_version=binding.cli_version,
+                requested_model=binding.requested_model,
+                observed_model_identifier=None,
+                config_digest=binding.config_digest,
+                evidence_digest=None,
+                manifest_digest=None,
+                rescored_equal=None,
+                process_returncode=None,
+            )
+            outcomes.append(outcome)
+            write_outcome(
+                self.plan.output_root / "outcomes" / f"{trial.run_id}.json",
+                outcome,
+            )
+        state = {
+            "schema_version": "0.1",
+            "plan_digest": self.plan.plan_digest,
+            "outcomes": [outcome.to_mapping() for outcome in outcomes],
+        }
+        (self.plan.output_root / "batch-state.json").write_text(
+            json.dumps(state),
+            encoding="utf-8",
+        )
+        summary_digest = write_summary(
+            self.plan.output_root / "batch-summary.json",
+            build_batch_summary(self.plan, tuple(outcomes)),
+        )
+        digests = [outcome.outcome_digest for outcome in outcomes]
+        result_digest = (
+            "sha256:"
+            + hashlib.sha256(json.dumps(digests, separators=(",", ":")).encode()).hexdigest()
+        )
+        marker = {
+            "schema_version": "0.1",
+            "batch_id": self.plan.batch_id,
+            "status": "COMPLETE",
+            "plan_digest": self.plan.plan_digest,
+            "summary_digest": summary_digest,
+            "outcome_digests": digests,
+            "result_digest": result_digest,
+            "recorded_trials": 6,
+            "limitation": None,
+        }
+        marker_path.write_text(json.dumps(marker), encoding="utf-8")
+        return marker
+
+    def end(self, task_name: str) -> None:
+        raise AssertionError(f"terminal task must not be ended: {task_name}")
+
+    def delete(self, task_name: str) -> None:
+        del task_name
+        self.deleted = True
+
+
+def test_launch_deletes_exact_task_after_valid_terminal_marker(tmp_path: Path) -> None:
+    plan = _plan(tmp_path)
+    plan_path = plan.output_root / "experiment-plan.json"
+    write_plan(plan_path, plan)
+    controller = ValidTerminalController(plan)
+
+    marker = launch_plan(
+        plan_path,
+        controller=controller,  # type: ignore[arg-type]
+        identity_reader=lambda: "DESKTOP\\founder",
+    )
+
+    assert marker["status"] == "COMPLETE"
+    assert controller.deleted is True
+    record = json.loads((plan.output_root / "scheduler-record.json").read_text(encoding="utf-8"))
+    assert record["deletion_time"] is not None
+    assert record["cleanup_deferred"] is None
+    assert record["worker_terminal_evidence_time"] is not None

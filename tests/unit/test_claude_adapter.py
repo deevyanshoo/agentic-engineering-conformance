@@ -210,6 +210,9 @@ def test_exact_command_evidence_and_behavioral_scoring(tmp_path: Path) -> None:
     assert cwd is not None and not cwd.exists()
     assert adapter.last_observation is not None
     assert adapter.probed_cli_version == "2.1.236"
+    assert adapter.probed_auth_mode == "claude.ai"
+    assert adapter.probed_auth_provider == "firstParty"
+    assert adapter.probed_subscription_type == "pro"
     assert adapter.last_observation.session_id == "session-1"
     assert adapter.last_observation.observed_model == "claude-sonnet-test"
     assert not any(hasattr(adapter, name) for name in ("score", "classify", "pass_fail"))

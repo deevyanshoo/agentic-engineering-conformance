@@ -24,6 +24,9 @@ def _host(name: str) -> HostBinding:
         f"{name}-model",
         "sha256:" + ("c" if name == "codex" else "d") * 64,
         f"{name}-sandbox",
+        "chatgpt" if name == "codex" else "claude.ai",
+        "openai" if name == "codex" else "firstParty",
+        None if name == "codex" else "pro",
     )
 
 
@@ -62,7 +65,10 @@ def _outcome(
         control=control,
         limitations=(f"{trial.host}-limitation",),
         cli_version="2.0.0",
-        model_identifier=f"{trial.host}-observed",
+        requested_model=f"{trial.host}-requested",
+        observed_model_identifier=(
+            f"{trial.host}-observed" if functional is not Outcome.NOT_RUN else None
+        ),
         config_digest="sha256:" + ("c" if trial.host == "codex" else "d") * 64,
         evidence_digest="sha256:" + "f" * 64 if attempted else None,
         manifest_digest="sha256:" + "1" * 64 if attempted else None,
@@ -127,8 +133,34 @@ def test_aggregate_counts_all_result_classes_without_ranking(tmp_path: Path) -> 
     assert claude["classifications"]["INVALID_RUN"] == 1
     assert claude["functional"] == {"PASS": 1, "FAIL": 0}
     assert claude["control"] == {"PASS": 2, "FAIL": 0}
+    assert codex["requested_models"] == ["codex-requested"]
+    assert codex["observed_model_identifiers"] == ["codex-observed"]
     assert not {"winner", "ranking", "composite", "superiority"} & summary.keys()
     assert not {"winner", "ranking", "composite", "superiority"} & codex.keys()
+
+
+def test_non_run_outcome_cannot_claim_observed_model(tmp_path: Path) -> None:
+    trial = _plan(tmp_path).trials[0]
+    with pytest.raises(ValueError, match="observed model"):
+        TrialOutcome.create(
+            sequence=trial.sequence,
+            run_id=trial.run_id,
+            host=trial.host,
+            ordinal=trial.ordinal,
+            attempted=False,
+            classification=RunClassification.UNSUPPORTED,
+            functional=Outcome.NOT_RUN,
+            control=Outcome.NOT_RUN,
+            limitations=("unavailable",),
+            cli_version="2.0.0",
+            requested_model="codex-requested",
+            observed_model_identifier="fabricated-observation",
+            config_digest="sha256:" + "c" * 64,
+            evidence_digest=None,
+            manifest_digest=None,
+            rescored_equal=None,
+            process_returncode=None,
+        )
 
 
 def test_aggregate_rejects_missing_reordered_or_mismatched_trials(tmp_path: Path) -> None:

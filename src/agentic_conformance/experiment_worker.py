@@ -34,6 +34,8 @@ from agentic_conformance.experiment_aggregate import (
     TrialOutcome,
     build_batch_summary,
     file_digest,
+    load_outcome,
+    write_outcome,
     write_summary,
 )
 from agentic_conformance.experiment_plan import (
@@ -94,6 +96,7 @@ SourceStateReader = Callable[[Path], tuple[str, tuple[str, ...]]]
 
 def run_experiment(
     plan_path: Path,
+    expected_plan_digest: str,
     *,
     ancestry_reader: Callable[[int], ProcessAncestry] = capture_windows_ancestry,
     runtime_factory: RuntimeFactory | None = None,
@@ -101,6 +104,8 @@ def run_experiment(
     environment_reader: Callable[[], Mapping[str, str]] = sanitized_environment,
 ) -> WorkerResult:
     plan = load_plan(plan_path)
+    if plan.plan_digest != expected_plan_digest:
+        raise ValueError("experiment plan differs from scheduled digest binding")
     summary_path = plan.output_root / "batch-summary.json"
     marker_path = plan.output_root / "batch-complete.json"
     state_reader = source_state_reader or read_source_state
@@ -139,6 +144,8 @@ def run_experiment(
             observed_version = getattr(runtime.adapter, "probed_cli_version", None)
             if observed_version != binding.cli_version:
                 raise RuntimeError("host CLI version differs from immutable plan binding")
+            if not missing:
+                _validate_auth_binding(binding, runtime.adapter)
             runtimes[binding.name] = runtime
             availability[binding.name] = (
                 (
@@ -164,6 +171,10 @@ def run_experiment(
             else:
                 runtime = runtimes[binding.name]
                 outcome = _run_bound_trial(plan, trial, binding, runtime)
+            write_outcome(
+                plan.output_root / "outcomes" / f"{outcome.run_id}.json",
+                outcome,
+            )
             outcomes.append(outcome)
             _write_batch_state(plan, tuple(outcomes))
             _verify_source(plan, state_reader)
@@ -173,11 +184,15 @@ def run_experiment(
         _atomic_json(marker_path, marker)
         return WorkerResult(status, 21, tuple(outcomes), summary_path, marker_path)
 
-    summary = build_batch_summary(plan, tuple(outcomes))
+    persisted_outcomes = tuple(
+        load_outcome(plan.output_root / "outcomes" / f"{trial.run_id}.json")
+        for trial in plan.trials
+    )
+    summary = build_batch_summary(plan, persisted_outcomes)
     summary_digest = write_summary(summary_path, summary)
-    marker = _terminal_marker(plan, "COMPLETE", tuple(outcomes), summary_digest)
+    marker = _terminal_marker(plan, "COMPLETE", persisted_outcomes, summary_digest)
     _atomic_json(marker_path, marker)
-    return WorkerResult("COMPLETE", 0, tuple(outcomes), summary_path, marker_path)
+    return WorkerResult("COMPLETE", 0, persisted_outcomes, summary_path, marker_path)
 
 
 def _run_bound_trial(
@@ -230,6 +245,7 @@ def _run_bound_trial(
         else:
             raise ValueError("unsupported experiment host")
     except Exception as error:
+        diagnostic_artifacts = diagnostics()
         attempted = len(runtime.observations()) > observation_start
         outcome = TrialOutcome.create(
             sequence=trial.sequence,
@@ -240,16 +256,24 @@ def _run_bound_trial(
             classification=RunClassification.INVALID_RUN,
             functional=Outcome.NOT_RUN,
             control=Outcome.NOT_RUN,
-            limitations=(_safe_error(error),),
+            limitations=(
+                _safe_error(error),
+                "requested model was not observed because the trial did not complete",
+            ),
             cli_version=binding.cli_version,
-            model_identifier=binding.requested_model,
+            requested_model=binding.requested_model,
+            observed_model_identifier=None,
             config_digest=binding.config_digest,
             evidence_digest=None,
             manifest_digest=None,
             rescored_equal=None,
             process_returncode=None,
         )
-        _persist_non_evidence_outcome(plan.output_root / "runs", outcome)
+        _persist_non_evidence_outcome(
+            plan.output_root / "runs",
+            outcome,
+            additional_diagnostics=diagnostic_artifacts,
+        )
         return outcome
 
     manifest_raw: Any = json.loads(artifacts.manifest_path.read_text(encoding="utf-8"))
@@ -263,6 +287,10 @@ def _run_bound_trial(
         if isinstance(limitations, list)
         else ("persisted run limitations were malformed",)
     )
+    if trial.host == "codex":
+        safe_limitations += (
+            "Codex model was requested/configured but not independently observed in this run.",
+        )
     return TrialOutcome.create(
         sequence=trial.sequence,
         run_id=trial.run_id,
@@ -274,7 +302,10 @@ def _run_bound_trial(
         control=result.control,
         limitations=safe_limitations,
         cli_version=binding.cli_version,
-        model_identifier=cast(str | None, manifest.get("model_identifier")),
+        requested_model=binding.requested_model,
+        observed_model_identifier=(
+            cast(str | None, manifest.get("model_identifier")) if trial.host == "claude" else None
+        ),
         config_digest=binding.config_digest,
         evidence_digest=file_digest(artifacts.evidence_path),
         manifest_digest=file_digest(artifacts.manifest_path),
@@ -298,9 +329,13 @@ def _not_run_outcome(
         classification=classification,
         functional=Outcome.NOT_RUN,
         control=Outcome.NOT_RUN,
-        limitations=(reason,),
+        limitations=(
+            reason,
+            "requested model was not observed because the trial did not execute",
+        ),
         cli_version=binding.cli_version,
-        model_identifier=binding.requested_model,
+        requested_model=binding.requested_model,
+        observed_model_identifier=None,
         config_digest=binding.config_digest,
         evidence_digest=None,
         manifest_digest=None,
@@ -314,7 +349,7 @@ def default_runtime_factory(
     workspace_parent: Path,
     before_execute: Callable[[object], None],
 ) -> HostRuntime:
-    runner = ObservedProcessRunner()
+    runner = ObservedProcessRunner(observe_command=_is_live_host_command)
 
     def resolver(_: str) -> str:
         return binding.executable
@@ -343,6 +378,14 @@ def default_runtime_factory(
             cast(Mapping[str, object], observation.to_mapping())
             for observation in runner.observations
         ),
+    )
+
+
+def _is_live_host_command(command: tuple[str, ...]) -> bool:
+    return not (
+        command[-1:] == ("--version",)
+        or command[-2:] == ("login", "status")
+        or command[-3:] == ("auth", "status", "--json")
     )
 
 
@@ -426,6 +469,24 @@ def _validate_runtime_identity(binding: HostBinding, adapter: Adapter) -> None:
         raise RuntimeError("adapter identity differs from immutable plan binding")
 
 
+def _validate_auth_binding(binding: HostBinding, adapter: Adapter) -> None:
+    observed_mode = getattr(adapter, "probed_auth_mode", None)
+    if observed_mode != binding.auth_mode:
+        raise RuntimeError("host authentication mode differs from immutable plan binding")
+    observed_provider: str | None
+    observed_subscription: str | None
+    if binding.name == "codex":
+        observed_provider = "openai"
+        observed_subscription = None
+    else:
+        observed_provider = cast(str | None, getattr(adapter, "probed_auth_provider", None))
+        observed_subscription = cast(str | None, getattr(adapter, "probed_subscription_type", None))
+    if observed_provider != binding.auth_provider:
+        raise RuntimeError("host authentication provider differs from immutable plan binding")
+    if observed_subscription != binding.subscription_type:
+        raise RuntimeError("host subscription type differs from immutable plan binding")
+
+
 def _binding(plan: ExperimentPlan, host: str) -> HostBinding:
     for binding in plan.hosts:
         if binding.name == host:
@@ -433,7 +494,12 @@ def _binding(plan: ExperimentPlan, host: str) -> HostBinding:
     raise ValueError("trial host has no plan binding")
 
 
-def _persist_non_evidence_outcome(output_root: Path, outcome: TrialOutcome) -> None:
+def _persist_non_evidence_outcome(
+    output_root: Path,
+    outcome: TrialOutcome,
+    *,
+    additional_diagnostics: Mapping[str, str] | None = None,
+) -> None:
     output_root.mkdir(parents=True, exist_ok=True)
     target = output_root / outcome.run_id
     if target.exists():
@@ -442,6 +508,10 @@ def _persist_non_evidence_outcome(output_root: Path, outcome: TrialOutcome) -> N
     staging.mkdir()
     try:
         _atomic_json(staging / "outcome.json", outcome.to_mapping())
+        for relative_name, content in (additional_diagnostics or {}).items():
+            if Path(relative_name).name != relative_name:
+                raise ValueError("diagnostic artifact name must be a single safe path component")
+            (staging / relative_name).write_text(content, encoding="utf-8")
         staging.replace(target)
     except Exception:
         shutil.rmtree(staging, ignore_errors=True)
@@ -514,9 +584,10 @@ def _safe_error(error: Exception) -> str:
 def main(arguments: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run a bound neutral AEC experiment plan")
     parser.add_argument("--plan", type=Path, required=True)
+    parser.add_argument("--expected-plan-digest", required=True)
     parsed = parser.parse_args(arguments)
     try:
-        result = run_experiment(parsed.plan)
+        result = run_experiment(parsed.plan, parsed.expected_plan_digest)
     except Exception as error:
         print(json.dumps({"status": "INVALID_PLAN", "error": _safe_error(error)}))
         return 30
