@@ -85,4 +85,7 @@ emits no `control_event`, so an unguarded correct behavior remains BEHAVIORAL_PA
 ## Limitations
 
 M1 uses deterministic synthetic fixtures and a fake adapter. M2 adds one stochastic Codex trial;
-M3 adds at most one Claude trial. These milestones do not establish external-host performance,
+M3 adds one stochastic Claude trial. These milestones do not establish external-host performance,
+stochastic reproducibility, security against a hostile operating system, or correctness of the
+provisional taxonomy. The individual N=1 host observations do not support pass rates, rankings,
+or Codex-versus-Claude performance claims.

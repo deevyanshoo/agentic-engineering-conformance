@@ -108,3 +108,23 @@ def test_jsonl_normalizes_text_free_lifecycle_and_preserves_raw_events() -> None
 def test_jsonl_rejects_malformed_or_non_object_lines(value: str) -> None:
     with pytest.raises(ValueError, match="line"):
         parse_claude_jsonl(value)
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "",
+        _line({"type": "system", "subtype": "init"}),
+        _line(
+            {
+                "type": "result",
+                "subtype": "error_max_turns",
+                "is_error": True,
+                "result": "not admissible",
+            }
+        ),
+    ],
+)
+def test_jsonl_rejects_incomplete_or_failed_terminal_stream(value: str) -> None:
+    with pytest.raises(ValueError, match=r"empty|terminal"):
+        parse_claude_jsonl(value)

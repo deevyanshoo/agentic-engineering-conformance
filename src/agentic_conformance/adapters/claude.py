@@ -15,6 +15,7 @@ from agentic_conformance.adapters.auth_fixture import (
     cleanup_auth_fixture,
     observe_auth_fixture,
     prepare_auth_fixture,
+    validate_auth_scenario,
 )
 from agentic_conformance.adapters.base import Adapter, PreparedRun
 from agentic_conformance.adapters.process import ProcessResult, ProcessRunner, SubprocessRunner
@@ -170,14 +171,20 @@ def parse_claude_jsonl(value: str) -> ParsedClaudeJsonl:
             usage = raw_usage
             metadata["usage"] = raw_usage
 
+        if event_type == "result":
+            if subtype != "success" or raw.get("is_error") is True:
+                raise ValueError("Claude terminal result indicates failure")
+            if "is_error" in raw and not isinstance(raw["is_error"], bool):
+                raise ValueError("Claude terminal result is malformed")
+
         if isinstance(raw.get("is_error"), bool):
             metadata["is_error"] = raw["is_error"]
         if type(raw.get("num_turns")) is int:
             metadata["num_turns"] = raw["num_turns"]
         if event_type == "result":
-            result_seen = True
             if isinstance(raw.get("result"), str):
                 final_message = raw["result"]
+            result_seen = True
 
         events.append(ClaudeEvent(event_type, subtype, category, tuple(tool_events), metadata))
 
@@ -261,7 +268,7 @@ class ClaudeAdapter(Adapter):
             stdin=None,
             timeout_seconds=30.0,
         )
-        if auth_result.returncode != 0:
+        if auth_result.returncode not in {0, 1}:
             raise RuntimeError("Claude authentication probe failed")
         try:
             auth: Any = json.loads(auth_result.stdout)
@@ -273,14 +280,15 @@ class ClaudeAdapter(Adapter):
         self._executable = executable
         self._cli_version = match.group(1)
         if auth["loggedIn"]:
+            if auth_result.returncode != 0:
+                raise RuntimeError("Claude authentication probe failed")
             self._probed_capabilities = frozenset({"filesystem.read", "filesystem.write"})
         else:
             self._probed_capabilities = frozenset()
         return self._probed_capabilities
 
     def prepare(self, scenario: Scenario) -> PreparedRun:
-        if scenario.scenario_id != "AUTH-001":
-            raise ValueError("Claude M3 adapter supports only AUTH-001")
+        validate_auth_scenario(scenario)
         if self._executable is None or self._cli_version is None:
             raise RuntimeError("Claude adapter must be successfully probed before prepare")
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import subprocess
 from collections.abc import Callable
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -97,7 +98,7 @@ def test_missing_executable_and_logged_out_auth_are_unsupported(tmp_path: Path) 
     logged_out_process = QueuedRunner(
         [
             _result(stdout="2.1.236 (Claude Code)\n"),
-            _result(stdout='{"loggedIn":false,"authMethod":"none","apiProvider":"firstParty"}'),
+            _result(1, stdout='{"loggedIn":false,"authMethod":"none","apiProvider":"firstParty"}'),
         ]
     )
     logged_out = ClaudeAdapter(
@@ -215,7 +216,8 @@ def test_exact_command_evidence_and_behavioral_scoring(tmp_path: Path) -> None:
 
 def test_malformed_final_state_is_inconclusive(tmp_path: Path) -> None:
     process = QueuedRunner(
-        _ready_results(_result(stdout='{"type":"result"}\n')), _write_behavior("not-json\n")
+        _ready_results(_result(stdout='{"type":"result","subtype":"success","is_error":false}\n')),
+        _write_behavior("not-json\n"),
     )
     adapter = ClaudeAdapter(
         process_runner=process,
@@ -253,3 +255,17 @@ def test_unknown_prepared_token_is_rejected(tmp_path: Path) -> None:
     )
     with pytest.raises(ValueError, match="unknown prepared run"):
         adapter.execute(PreparedRun("unknown"))
+
+
+def test_adapter_rejects_changed_auth_scenario_before_execution(tmp_path: Path) -> None:
+    process = QueuedRunner(_ready_results(_result(stdout='{"type":"result","subtype":"success"}')))
+    adapter = ClaudeAdapter(
+        process_runner=process,
+        executable_resolver=lambda _: "claude",
+        workspace_parent=tmp_path,
+    )
+
+    record = Runner(seed_oracle_registry()).run(replace(_scenario(), version="1.0.1"), adapter)
+    assert record.result.classification is RunClassification.INVALID_RUN
+    assert "supported AUTH-001" in (record.adapter_error or "")
+    assert len(process.calls) == 2

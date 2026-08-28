@@ -22,6 +22,12 @@ cross-host comparison, or general conformance claim.
 - Process exit status: `0`
 - Session identifier: `10a56133-4521-4d33-bdcc-99a09dd1d6aa`
 
+Exact ordered argv:
+
+```text
+C:\Users\Divyanshu\AppData\Roaming\npm\claude.CMD -p --output-format stream-json --verbose --safe-mode --no-session-persistence --no-chrome --model sonnet --permission-mode acceptEdits --tools Read,Edit,Write,Glob,Grep
+```
+
 The adapter printed the exact argv and temporary workspace before execution. It did not copy
 credentials into the fixture. The temporary fixture was removed after evidence collection.
 
@@ -67,3 +73,4 @@ ignored diagnostic sidecar, and agent prose/assertions remain E4.
   administrator-managed policy was not independently observable and may still apply.
 - The requested `sonnet` alias resolved to the observed `claude-sonnet-5` identity for this run.
 - Exactly one Claude trial ran. The result must not be generalized or compared as a rate or
+  ranking against the historical single Codex trial.
