@@ -2,7 +2,7 @@
 
 Updated: 2026-08-28
 
-Completion state: `IN_PROGRESS`
+Completion state: `M3_CLAUDE_VERTICAL_SLICE_COMPLETE`
 
 ## Reconciled authority and state
 
@@ -104,8 +104,21 @@ filesystem actor is outside the declared M3 tool/threat surface; inner-tree syml
 containment remains covered. Administrator-managed Claude policy is an accepted, explicit
 contamination limitation and is not credited as a benchmark control.
 
+## Final verification and publication state
+
+- Fresh local gate: Ruff format/check passed; strict mypy passed for 18 source files; all 143
+  tests passed; complete branch-range and worktree diff checks passed.
+- `m3/claude-adapter` was pushed with upstream tracking.
+- Draft PR #2 targets `m2/codex-adapter` with exact head `25a7f8a` at the publication
+  checkpoint.
+- PR #1 remains draft/open/unmerged; repository visibility remains PRIVATE; remote main remains
+  `c31a1a79e2f1ebebb60ee0516e3af99e5f869684`.
+- The M3 Actions verify job contained zero steps and failed before repository commands executed.
+  Hosted CI success is not claimed and the run was not retried.
+- Completion audit is persisted in `reports/m3-completion.md`.
 
 ## Execution DAG
+
 | Node | Deliverable | Status |
 | --- | --- | --- |
 | M3-D1 | Repository/PR/worktree reconciliation | COMPLETE |
@@ -117,9 +130,9 @@ contamination limitation and is not credited as a benchmark control.
 | M3-D11 | Exactly one live Claude AUTH-001 trial | COMPLETE |
 | M3-D12 | Stored-evidence rescore | COMPLETE |
 | M3-D13-D14 | Independent review and remediation | COMPLETE |
-| M3-D15 | Final local deterministic verification | PENDING |
-| M3-D16 | Push stacked branch and draft PR | PENDING |
-| M3-D17 | Completion record | PENDING |
+| M3-D15 | Final local deterministic verification | COMPLETE |
+| M3-D16 | Push stacked branch and draft PR | COMPLETE |
+| M3-D17 | Completion record | COMPLETE |
 
-Independent review and remediation are complete with no blocking current-scope finding. M3
-resumes at final local verification, M3-D15; publication-state and completion nodes remain.
+All M3 DAG nodes are complete. M1 remains satisfied, M2 remains accurately represented, both PRs
+remain draft and unmerged, the repository is PRIVATE, and no public launch occurred.
