@@ -77,8 +77,8 @@ were rebased in order. Historical completion commits and live evidence were not 
 The M5 pre-live review also exposed an M4-owned scheduler defect: a terminal scheduled task
 cleanup failure was recorded but did not block launcher success. M4 commit `0dc6700` now raises
 after durably recording deletion failure; its focused and full deterministic checks passed. The
-historical M4 batch is unchanged because deletion succeeded. M5 will rebase onto this correction
-before the live plan is bound.
+historical M4 batch is unchanged because deletion succeeded. M5 was rebased onto this correction
+before the live plan was bound.
 
 The first follow-up review caught a CASE 4 regression in the remediation: the persisted design
 includes calibration FAIL paired with AUTH stale `A` or no-decision. That definition is restored;
