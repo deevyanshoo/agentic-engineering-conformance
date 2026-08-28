@@ -184,6 +184,7 @@ The focused TDD red state was a missing shared validator. Correction verificatio
 format/check passed; strict mypy passed for 16 source files; all 121 tests passed; working-tree
 and complete branch-range diff checks passed. Historical M2 completion and its live result remain
 unchanged; this is a later correction to the reusable real-host layer.
+
 ## Post-completion fixture-version metadata correction (2026-08-29)
 
 M5 scenario versioning exposed that the Codex trial manifest populated `fixture_version` from
@@ -191,3 +192,6 @@ the scenario version. M1 masked the defect because both values were `1.0.0`. The
 now reads the fixture version from benchmark-owned scenario ground truth, matching the Claude
 path and preserving a distinct scenario/fixture identity. A regression changes only the scenario
 version and proves the fixture version remains `1.0.0`. Historical M2 evidence is unchanged.
+
+Correction verification: Ruff format/check passed; strict mypy passed for 16 source files; all
+122 tests passed. The correction was pushed to PR #1 before propagation to dependent branches.
