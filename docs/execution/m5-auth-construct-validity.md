@@ -101,7 +101,7 @@ The defect belongs to M4's generic neutral worker. M4 commit
 system temp path while retaining project-owned result output. M4 verification passed with 191
 tests. M5 propagated the fix in merge `23b35df968de431cb556a141acfbaaeb3398ce17`, preserving the
 bound live-plan revision and historical terminal artifacts. No rerun occurred. Independent
-post-run review returned POST-RUN GO with no blocking finding. Evidence: reports/m5-post-run-review.md.
+post-run review returned POST-RUN GO with no blocking finding. Evidence: reports/m5-post-run-review.md. Final Ruff format/check, strict mypy for 26 source files, all 234 tests, clean status, and both complete branch-range diff checks passed.
 
 ## Execution DAG
 
@@ -126,6 +126,6 @@ post-run review returned POST-RUN GO with no blocking finding. Evidence: reports
 | M5-D15 | Paired aggregate and construct interpretation | COMPLETE - CASE 5/inconclusive |
 | M5-D16 | Independent post-run review | COMPLETE - POST-RUN GO |
 | M5-D17 | Finding remediation | COMPLETE - no blocking finding |
-| M5-D18 | Final deterministic verification | PENDING |
+| M5-D18 | Final deterministic verification | COMPLETE - 234 passed |
 | M5-D19 | Push stacked branch and create draft PR | PENDING |
 | M5-D20 | Completion record | PENDING |
