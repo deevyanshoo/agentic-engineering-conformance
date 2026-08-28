@@ -14,18 +14,33 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol, cast
 
-from agentic_conformance.adapters.auth_fixture import auth_fixture_digest
+from agentic_conformance.adapters.auth_fixture import (
+    AuthTreatment,
+    auth_fixture_base_digest,
+    auth_fixture_digest,
+    auth_treatment_digest,
+)
 from agentic_conformance.adapters.base import Adapter
 from agentic_conformance.adapters.claude import ClaudeAdapter, ClaudeRunDescription
 from agentic_conformance.adapters.codex import CodexAdapter, CodexRunDescription
+from agentic_conformance.calibration import (
+    CalibrationClassification,
+    CalibrationResult,
+)
 from agentic_conformance.claude_trial import (
     claude_config_digest,
+)
+from agentic_conformance.claude_trial import (
+    run_auth_calibration_trial as run_claude_calibration_trial,
 )
 from agentic_conformance.claude_trial import (
     run_auth_trial as run_claude_auth_trial,
 )
 from agentic_conformance.codex_trial import (
     codex_config_digest,
+)
+from agentic_conformance.codex_trial import (
+    run_auth_calibration_trial as run_codex_calibration_trial,
 )
 from agentic_conformance.codex_trial import (
     run_auth_trial as run_codex_auth_trial,
@@ -41,6 +56,7 @@ from agentic_conformance.experiment_aggregate import (
 from agentic_conformance.experiment_plan import (
     ExperimentPlan,
     HostBinding,
+    TrialCondition,
     TrialSpec,
     load_plan,
 )
@@ -62,6 +78,7 @@ class RuntimeFactory(Protocol):
         binding: HostBinding,
         workspace_parent: Path,
         before_execute: Callable[[object], None],
+        treatment: AuthTreatment,
     ) -> HostRuntime: ...
 
 
@@ -77,9 +94,9 @@ class PersistedArtifacts(Protocol):
     @property
     def manifest_path(self) -> Path: ...
     @property
-    def result(self) -> RunResult: ...
+    def result(self) -> RunResult | CalibrationResult: ...
     @property
-    def rescored(self) -> RunResult: ...
+    def rescored(self) -> RunResult | CalibrationResult: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -132,13 +149,27 @@ def run_experiment(
         return WorkerResult(neutrality.status, 20, (), summary_path, marker_path)
 
     factory = runtime_factory or default_runtime_factory
-    runtimes: dict[str, HostRuntime] = {}
-    availability: dict[str, tuple[RunClassification, str] | None] = {}
-    for binding in plan.hosts:
+    runtimes: dict[tuple[str, AuthTreatment], HostRuntime] = {}
+    availability: dict[tuple[str, AuthTreatment], tuple[RunClassification, str] | None] = {}
+    runtime_specs: list[tuple[HostBinding, AuthTreatment]] = []
+    for trial in plan.trials:
+        binding = _binding(plan, trial.host)
+        spec = (binding, _treatment(trial))
+        if spec not in runtime_specs:
+            runtime_specs.append(spec)
+    for binding, treatment in runtime_specs:
+        key = (binding.name, treatment)
         callback = _execution_preflight(plan, binding, state_reader)
         try:
-            runtime = factory(binding, plan.output_root / "workspaces", callback)
+            runtime = factory(
+                binding,
+                plan.output_root / "workspaces" / binding.name / treatment.value.casefold(),
+                callback,
+                treatment,
+            )
             _validate_runtime_identity(binding, runtime.adapter)
+            if getattr(runtime.adapter, "treatment", None) is not treatment:
+                raise RuntimeError("adapter treatment differs from immutable trial binding")
             capabilities = runtime.adapter.probe()
             missing = {"filesystem.read", "filesystem.write"} - capabilities
             observed_version = getattr(runtime.adapter, "probed_cli_version", None)
@@ -146,8 +177,8 @@ def run_experiment(
                 raise RuntimeError("host CLI version differs from immutable plan binding")
             if not missing:
                 _validate_auth_binding(binding, runtime.adapter)
-            runtimes[binding.name] = runtime
-            availability[binding.name] = (
+            runtimes[key] = runtime
+            availability[key] = (
                 (
                     RunClassification.UNSUPPORTED,
                     f"worker-context host capability unavailable: {', '.join(sorted(missing))}",
@@ -156,20 +187,20 @@ def run_experiment(
                 else None
             )
         except Exception as error:
-            availability[binding.name] = (RunClassification.INVALID_RUN, _safe_error(error))
-
+            availability[key] = (RunClassification.INVALID_RUN, _safe_error(error))
     outcomes: list[TrialOutcome] = []
     try:
         for trial in plan.trials:
             _verify_source(plan, state_reader)
             binding = _binding(plan, trial.host)
-            unavailable = availability[binding.name]
+            key = (binding.name, _treatment(trial))
+            unavailable = availability[key]
             if unavailable is not None:
                 classification, reason = unavailable
                 outcome = _not_run_outcome(trial, binding, classification, reason)
                 _persist_non_evidence_outcome(plan.output_root / "runs", outcome)
             else:
-                runtime = runtimes[binding.name]
+                runtime = runtimes[key]
                 outcome = _run_bound_trial(plan, trial, binding, runtime)
             write_outcome(
                 plan.output_root / "outcomes" / f"{outcome.run_id}.json",
@@ -219,12 +250,21 @@ def _run_bound_trial(
         if trial.host == "codex":
             if not isinstance(runtime.adapter, CodexAdapter):
                 raise TypeError("Codex plan slot requires CodexAdapter")
-            artifacts = run_codex_auth_trial(
-                plan.output_root / "runs",
-                runtime.adapter,
-                run_id=trial.run_id,
-                additional_diagnostics=diagnostics,
-            )
+            if trial.condition is TrialCondition.CALIBRATION:
+                artifacts = run_codex_calibration_trial(
+                    plan.output_root / "runs",
+                    runtime.adapter,
+                    run_id=trial.run_id,
+                    additional_diagnostics=diagnostics,
+                )
+            else:
+                artifacts = run_codex_auth_trial(
+                    plan.output_root / "runs",
+                    runtime.adapter,
+                    run_id=trial.run_id,
+                    scenario_version=plan.scenario_version,
+                    additional_diagnostics=diagnostics,
+                )
             codex_observation = runtime.adapter.last_observation
             if codex_observation is None:
                 raise RuntimeError("Codex observation is unavailable")
@@ -232,12 +272,21 @@ def _run_bound_trial(
         elif trial.host == "claude":
             if not isinstance(runtime.adapter, ClaudeAdapter):
                 raise TypeError("Claude plan slot requires ClaudeAdapter")
-            artifacts = run_claude_auth_trial(
-                plan.output_root / "runs",
-                runtime.adapter,
-                run_id=trial.run_id,
-                additional_diagnostics=diagnostics,
-            )
+            if trial.condition is TrialCondition.CALIBRATION:
+                artifacts = run_claude_calibration_trial(
+                    plan.output_root / "runs",
+                    runtime.adapter,
+                    run_id=trial.run_id,
+                    additional_diagnostics=diagnostics,
+                )
+            else:
+                artifacts = run_claude_auth_trial(
+                    plan.output_root / "runs",
+                    runtime.adapter,
+                    run_id=trial.run_id,
+                    scenario_version=plan.scenario_version,
+                    additional_diagnostics=diagnostics,
+                )
             claude_observation = runtime.adapter.last_observation
             if claude_observation is None:
                 raise RuntimeError("Claude observation is unavailable")
@@ -247,28 +296,7 @@ def _run_bound_trial(
     except Exception as error:
         diagnostic_artifacts = diagnostics()
         attempted = len(runtime.observations()) > observation_start
-        outcome = TrialOutcome.create(
-            sequence=trial.sequence,
-            run_id=trial.run_id,
-            host=trial.host,
-            ordinal=trial.ordinal,
-            attempted=attempted,
-            classification=RunClassification.INVALID_RUN,
-            functional=Outcome.NOT_RUN,
-            control=Outcome.NOT_RUN,
-            limitations=(
-                _safe_error(error),
-                "requested model was not observed because the trial did not complete",
-            ),
-            cli_version=binding.cli_version,
-            requested_model=binding.requested_model,
-            observed_model_identifier=None,
-            config_digest=binding.config_digest,
-            evidence_digest=None,
-            manifest_digest=None,
-            rescored_equal=None,
-            process_returncode=None,
-        )
+        outcome = _invalid_outcome(trial, binding, attempted, _safe_error(error))
         _persist_non_evidence_outcome(
             plan.output_root / "runs",
             outcome,
@@ -280,7 +308,6 @@ def _run_bound_trial(
     if not isinstance(manifest_raw, dict):
         raise RuntimeError("persisted run manifest is malformed")
     manifest = cast(dict[str, Any], manifest_raw)
-    result = artifacts.result
     limitations = manifest.get("limitations")
     safe_limitations = (
         tuple(item for item in limitations if isinstance(item, str))
@@ -291,27 +318,116 @@ def _run_bound_trial(
         safe_limitations += (
             "Codex model was requested/configured but not independently observed in this run.",
         )
+    observed_model = (
+        cast(str | None, manifest.get("model_identifier")) if trial.host == "claude" else None
+    )
+    rescored_equal = artifacts.result == artifacts.rescored
+    if trial.condition is TrialCondition.CALIBRATION:
+        if not isinstance(artifacts.result, CalibrationResult):
+            raise TypeError("calibration trial produced a conformance result")
+        return TrialOutcome.create(
+            sequence=trial.sequence,
+            run_id=trial.run_id,
+            host=trial.host,
+            ordinal=trial.ordinal,
+            attempted=True,
+            classification=None,
+            functional=_calibration_functional(artifacts.result.classification),
+            control=Outcome.NOT_RUN,
+            limitations=safe_limitations,
+            cli_version=binding.cli_version,
+            requested_model=binding.requested_model,
+            observed_model_identifier=observed_model,
+            config_digest=binding.config_digest,
+            evidence_digest=file_digest(artifacts.evidence_path),
+            manifest_digest=file_digest(artifacts.manifest_path),
+            rescored_equal=rescored_equal,
+            process_returncode=process_returncode,
+            condition=trial.condition,
+            calibration_classification=artifacts.result.classification,
+        )
+    if not isinstance(artifacts.result, RunResult):
+        raise TypeError("AUTH conflict trial produced a calibration result")
     return TrialOutcome.create(
         sequence=trial.sequence,
         run_id=trial.run_id,
         host=trial.host,
         ordinal=trial.ordinal,
         attempted=True,
-        classification=result.classification,
-        functional=result.functional,
-        control=result.control,
+        classification=artifacts.result.classification,
+        functional=artifacts.result.functional,
+        control=artifacts.result.control,
         limitations=safe_limitations,
         cli_version=binding.cli_version,
         requested_model=binding.requested_model,
-        observed_model_identifier=(
-            cast(str | None, manifest.get("model_identifier")) if trial.host == "claude" else None
-        ),
+        observed_model_identifier=observed_model,
         config_digest=binding.config_digest,
         evidence_digest=file_digest(artifacts.evidence_path),
         manifest_digest=file_digest(artifacts.manifest_path),
-        rescored_equal=artifacts.result == artifacts.rescored,
+        rescored_equal=rescored_equal,
         process_returncode=process_returncode,
+        condition=trial.condition,
     )
+
+
+def _invalid_outcome(
+    trial: TrialSpec, binding: HostBinding, attempted: bool, reason: str
+) -> TrialOutcome:
+    limitations = (
+        reason,
+        "requested model was not observed because the trial did not complete",
+    )
+    if trial.condition is TrialCondition.CALIBRATION:
+        return TrialOutcome.create(
+            sequence=trial.sequence,
+            run_id=trial.run_id,
+            host=trial.host,
+            ordinal=trial.ordinal,
+            attempted=attempted,
+            classification=None,
+            functional=Outcome.NOT_RUN,
+            control=Outcome.NOT_RUN,
+            limitations=limitations,
+            cli_version=binding.cli_version,
+            requested_model=binding.requested_model,
+            observed_model_identifier=None,
+            config_digest=binding.config_digest,
+            evidence_digest=None,
+            manifest_digest=None,
+            rescored_equal=None,
+            process_returncode=None,
+            condition=trial.condition,
+            calibration_classification=CalibrationClassification.CALIBRATION_INVALID,
+        )
+    return TrialOutcome.create(
+        sequence=trial.sequence,
+        run_id=trial.run_id,
+        host=trial.host,
+        ordinal=trial.ordinal,
+        attempted=attempted,
+        classification=RunClassification.INVALID_RUN,
+        functional=Outcome.NOT_RUN,
+        control=Outcome.NOT_RUN,
+        limitations=limitations,
+        cli_version=binding.cli_version,
+        requested_model=binding.requested_model,
+        observed_model_identifier=None,
+        config_digest=binding.config_digest,
+        evidence_digest=None,
+        manifest_digest=None,
+        rescored_equal=None,
+        process_returncode=None,
+        condition=trial.condition,
+    )
+
+
+def _calibration_functional(classification: CalibrationClassification) -> Outcome:
+    return {
+        CalibrationClassification.CALIBRATION_PASS: Outcome.PASS,
+        CalibrationClassification.CALIBRATION_FAIL: Outcome.FAIL,
+        CalibrationClassification.CALIBRATION_INCONCLUSIVE: Outcome.INCONCLUSIVE,
+        CalibrationClassification.CALIBRATION_INVALID: Outcome.NOT_RUN,
+    }[classification]
 
 
 def _not_run_outcome(
@@ -320,6 +436,37 @@ def _not_run_outcome(
     classification: RunClassification,
     reason: str,
 ) -> TrialOutcome:
+    limitations = (
+        reason,
+        "requested model was not observed because the trial did not execute",
+    )
+    if trial.condition is TrialCondition.CALIBRATION:
+        calibration = (
+            CalibrationClassification.CALIBRATION_INCONCLUSIVE
+            if classification is RunClassification.UNSUPPORTED
+            else CalibrationClassification.CALIBRATION_INVALID
+        )
+        return TrialOutcome.create(
+            sequence=trial.sequence,
+            run_id=trial.run_id,
+            host=trial.host,
+            ordinal=trial.ordinal,
+            attempted=False,
+            classification=None,
+            functional=Outcome.NOT_RUN,
+            control=Outcome.NOT_RUN,
+            limitations=limitations,
+            cli_version=binding.cli_version,
+            requested_model=binding.requested_model,
+            observed_model_identifier=None,
+            config_digest=binding.config_digest,
+            evidence_digest=None,
+            manifest_digest=None,
+            rescored_equal=None,
+            process_returncode=None,
+            condition=trial.condition,
+            calibration_classification=calibration,
+        )
     return TrialOutcome.create(
         sequence=trial.sequence,
         run_id=trial.run_id,
@@ -329,10 +476,7 @@ def _not_run_outcome(
         classification=classification,
         functional=Outcome.NOT_RUN,
         control=Outcome.NOT_RUN,
-        limitations=(
-            reason,
-            "requested model was not observed because the trial did not execute",
-        ),
+        limitations=limitations,
         cli_version=binding.cli_version,
         requested_model=binding.requested_model,
         observed_model_identifier=None,
@@ -341,6 +485,7 @@ def _not_run_outcome(
         manifest_digest=None,
         rescored_equal=None,
         process_returncode=None,
+        condition=trial.condition,
     )
 
 
@@ -348,6 +493,7 @@ def default_runtime_factory(
     binding: HostBinding,
     workspace_parent: Path,
     before_execute: Callable[[object], None],
+    treatment: AuthTreatment,
 ) -> HostRuntime:
     runner = ObservedProcessRunner(observe_command=_is_live_host_command)
 
@@ -361,6 +507,7 @@ def default_runtime_factory(
             workspace_parent=workspace_parent,
             model=binding.requested_model,
             before_execute=before_execute,
+            treatment=treatment,
         )
     elif binding.name == "claude":
         adapter = ClaudeAdapter(
@@ -369,6 +516,7 @@ def default_runtime_factory(
             workspace_parent=workspace_parent,
             model=binding.requested_model,
             before_execute=before_execute,
+            treatment=treatment,
         )
     else:
         raise ValueError("unsupported host binding")
@@ -403,8 +551,9 @@ def read_source_state(source_root: Path) -> tuple[str, tuple[str, ...]]:
 
 def _verify_plan_bindings(plan: ExperimentPlan, state_reader: SourceStateReader) -> None:
     _verify_source(plan, state_reader)
+    scenario_name = "scenario.json" if plan.schema_version == "0.1" else "scenario-v2.json"
     scenario = load_scenario(
-        plan.source_root / "scenarios/authority/AUTH-001/scenario.json",
+        plan.source_root / "scenarios/authority/AUTH-001" / scenario_name,
         plan.source_root / "schemas/scenario.schema.json",
     )
     if (
@@ -414,8 +563,18 @@ def _verify_plan_bindings(plan: ExperimentPlan, state_reader: SourceStateReader)
     ):
         raise ValueError("experiment plan scenario binding differs from source")
     fixture_version = scenario.ground_truth.get("fixture_version")
-    if fixture_version != plan.fixture_version or auth_fixture_digest() != plan.fixture_digest:
-        raise ValueError("experiment plan fixture binding differs from source")
+    if fixture_version != plan.fixture_version:
+        raise ValueError("experiment plan fixture version differs from source")
+    if plan.schema_version == "0.1":
+        if auth_fixture_digest() != plan.fixture_digest:
+            raise ValueError("experiment plan fixture binding differs from source")
+        return
+    if (
+        auth_fixture_base_digest() != plan.fixture_digest
+        or auth_treatment_digest(AuthTreatment.CALIBRATION) != plan.calibration_prompt_digest
+        or auth_treatment_digest(AuthTreatment.AUTH_CONFLICT) != plan.auth_conflict_prompt_digest
+    ):
+        raise ValueError("paired experiment fixture/treatment binding differs from source")
 
 
 def _verify_source(plan: ExperimentPlan, state_reader: SourceStateReader) -> None:
@@ -485,6 +644,12 @@ def _validate_auth_binding(binding: HostBinding, adapter: Adapter) -> None:
         raise RuntimeError("host authentication provider differs from immutable plan binding")
     if observed_subscription != binding.subscription_type:
         raise RuntimeError("host subscription type differs from immutable plan binding")
+
+
+def _treatment(trial: TrialSpec) -> AuthTreatment:
+    if trial.condition is TrialCondition.CALIBRATION:
+        return AuthTreatment.CALIBRATION
+    return AuthTreatment.AUTH_CONFLICT
 
 
 def _binding(plan: ExperimentPlan, host: str) -> HostBinding:

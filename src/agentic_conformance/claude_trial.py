@@ -11,12 +11,19 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-from agentic_conformance.adapters.auth_fixture import AUTH_PROMPT
+from agentic_conformance.adapters.auth_fixture import (
+    AuthTreatment,
+    auth_prompt,
+)
 from agentic_conformance.adapters.claude import ClaudeAdapter, ClaudeRunDescription
+from agentic_conformance.calibration_persistence import (
+    PersistedCalibration,
+    persist_calibration,
+)
 from agentic_conformance.manifest import ManifestMetadata
 from agentic_conformance.result import RunResult
 from agentic_conformance.runner import Runner
-from agentic_conformance.scenario import load_scenario
+from agentic_conformance.scenario import Scenario, load_scenario
 from agentic_conformance.seed_oracles import seed_oracle_registry
 from agentic_conformance.trial_persistence import persist_trial
 
@@ -39,12 +46,12 @@ def run_auth_trial(
     adapter: ClaudeAdapter,
     *,
     run_id: str | None = None,
+    scenario_version: str = "1.0.0",
     additional_diagnostics: (Mapping[str, str] | Callable[[], Mapping[str, str]] | None) = None,
 ) -> TrialArtifacts:
-    scenario = load_scenario(
-        ROOT / "scenarios/authority/AUTH-001/scenario.json",
-        ROOT / "schemas/scenario.schema.json",
-    )
+    if adapter.treatment is not AuthTreatment.AUTH_CONFLICT:
+        raise ValueError("AUTH conformance trial requires the conflict treatment")
+    scenario = _load_auth_scenario(scenario_version)
     oracles = seed_oracle_registry()
     record = Runner(oracles).run(scenario, adapter)
     if record.evidence is None:
@@ -54,10 +61,6 @@ def run_auth_trial(
     if observation is None:
         raise RuntimeError("Claude trial completed without an observation record")
 
-    fixture_version = scenario.ground_truth.get("fixture_version")
-    if not isinstance(fixture_version, str):
-        raise RuntimeError("AUTH-001 fixture version is unavailable")
-
     actual_run_id = run_id or f"auth-001-claude-{_compact_now()}-{uuid.uuid4().hex[:8]}"
     description = observation.description
     metadata = ManifestMetadata(
@@ -66,9 +69,9 @@ def run_auth_trial(
         stack_version=description.cli_version,
         stack_config_digest=claude_config_digest(description),
         model_identifier=observation.observed_model or description.requested_model,
-        fixture_version=fixture_version,
+        fixture_version=_fixture_version(scenario),
         initial_git_sha=observation.initial_head,
-        task_digest=_digest(AUTH_PROMPT),
+        task_digest=_digest(auth_prompt(adapter.treatment)),
         environment={
             "python": platform.python_version(),
             "platform": platform.platform(),
@@ -101,6 +104,75 @@ def run_auth_trial(
         result=persisted.result,
         rescored=persisted.rescored,
     )
+
+
+def run_auth_calibration_trial(
+    output_root: Path,
+    adapter: ClaudeAdapter,
+    *,
+    run_id: str | None = None,
+    additional_diagnostics: (Mapping[str, str] | Callable[[], Mapping[str, str]] | None) = None,
+) -> PersistedCalibration:
+    if adapter.treatment is not AuthTreatment.CALIBRATION:
+        raise ValueError("calibration trial requires the no-conflict treatment")
+    scenario = _load_auth_scenario("2.0.0")
+    record = Runner(seed_oracle_registry()).run(scenario, adapter)
+    if record.evidence is None:
+        detail = record.adapter_error or record.result.classification.value
+        raise RuntimeError(f"Claude calibration produced no rescorable evidence: {detail}")
+    observation = adapter.last_observation
+    if observation is None:
+        raise RuntimeError("Claude calibration completed without an observation record")
+    actual_run_id = run_id or f"auth-cal-claude-{_compact_now()}-{uuid.uuid4().hex[:8]}"
+    description = observation.description
+    metadata = ManifestMetadata(
+        run_id=actual_run_id,
+        stack_name="Anthropic Claude Code",
+        stack_version=description.cli_version,
+        stack_config_digest=claude_config_digest(description),
+        model_identifier=observation.observed_model or description.requested_model,
+        fixture_version=_fixture_version(scenario),
+        initial_git_sha=observation.initial_head,
+        task_digest=_digest(auth_prompt(adapter.treatment)),
+        environment={
+            "python": platform.python_version(),
+            "platform": platform.platform(),
+            "implementation": platform.python_implementation(),
+        },
+        network_policy="RESTRICTED",
+        started_at=observation.process.started_at,
+        ended_at=observation.process.ended_at,
+    )
+    return persist_calibration(
+        output_root=output_root,
+        run_id=actual_run_id,
+        record=record,
+        scenario=scenario,
+        adapter=adapter,
+        metadata=metadata,
+        raw_diagnostic_name="claude.jsonl",
+        raw_diagnostic=observation.process.stdout,
+        additional_diagnostics=(
+            additional_diagnostics() if callable(additional_diagnostics) else additional_diagnostics
+        ),
+    )
+
+
+def _load_auth_scenario(version: str) -> Scenario:
+    filename = {"1.0.0": "scenario.json", "2.0.0": "scenario-v2.json"}.get(version)
+    if filename is None:
+        raise ValueError("unsupported AUTH-001 scenario version")
+    return load_scenario(
+        ROOT / "scenarios/authority/AUTH-001" / filename,
+        ROOT / "schemas/scenario.schema.json",
+    )
+
+
+def _fixture_version(scenario: Scenario) -> str:
+    value = scenario.ground_truth.get("fixture_version")
+    if not isinstance(value, str):
+        raise RuntimeError("AUTH-001 fixture version is unavailable")
+    return value
 
 
 def _print_preflight(description: ClaudeRunDescription) -> None:

@@ -253,6 +253,10 @@ class ClaudeAdapter(Adapter):
         return self._cli_version
 
     @property
+    def treatment(self) -> AuthTreatment:
+        return self._treatment
+
+    @property
     def probed_auth_mode(self) -> str | None:
         return self._auth_mode
 

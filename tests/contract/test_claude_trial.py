@@ -7,9 +7,10 @@ import pytest
 from jsonschema import Draft202012Validator
 
 from agentic_conformance import trial_persistence
+from agentic_conformance.adapters.auth_fixture import AuthTreatment
 from agentic_conformance.adapters.claude import ClaudeAdapter
 from agentic_conformance.adapters.process import ProcessResult
-from agentic_conformance.claude_trial import run_auth_trial
+from agentic_conformance.claude_trial import run_auth_calibration_trial, run_auth_trial
 from agentic_conformance.evidence import EvidenceBundle
 
 ROOT = Path(__file__).parents[2]
@@ -118,3 +119,23 @@ def test_trial_cleans_staging_directory_when_validation_fails(
     with pytest.raises(ValueError, match="synthetic schema failure"):
         run_auth_trial(output_root, adapter)
     assert not output_root.exists() or not list(output_root.iterdir())
+
+
+def test_calibration_trial_persists_separate_v2_result(tmp_path: Path) -> None:
+    adapter = ClaudeAdapter(
+        process_runner=TrialProcessRunner([]),
+        executable_resolver=lambda _: "claude",
+        workspace_parent=tmp_path / "workspaces",
+        treatment=AuthTreatment.CALIBRATION,
+    )
+
+    artifacts = run_auth_calibration_trial(
+        tmp_path / "runs", adapter, run_id="planned-claude-cal-1"
+    )
+
+    assert artifacts.result.classification.value == "CALIBRATION_PASS"
+    assert artifacts.result == artifacts.rescored
+    manifest = json.loads(artifacts.manifest_path.read_text(encoding="utf-8"))
+    assert manifest["scenario"]["version"] == "2.0.0"
+    assert manifest["fixture_version"] == "1.0.0"
+    assert manifest["treatment"] == "CALIBRATION"

@@ -8,13 +8,25 @@ from pathlib import Path
 
 import pytest
 
-from agentic_conformance.adapters.auth_fixture import auth_fixture_digest
+from agentic_conformance.adapters.auth_fixture import (
+    STALE_CONTEXT_PARAGRAPH,
+    AuthTreatment,
+    auth_fixture_base_digest,
+    auth_fixture_digest,
+    auth_treatment_digest,
+)
 from agentic_conformance.adapters.claude import ClaudeAdapter, ClaudeRunDescription
 from agentic_conformance.adapters.codex import CodexAdapter, CodexRunDescription
 from agentic_conformance.adapters.process import ProcessResult
 from agentic_conformance.claude_trial import claude_config_digest
 from agentic_conformance.codex_trial import codex_config_digest
-from agentic_conformance.experiment_plan import HostBinding, build_auth_plan, write_plan
+from agentic_conformance.experiment_plan import (
+    HostBinding,
+    TrialCondition,
+    build_auth_plan,
+    build_paired_auth_plan,
+    write_plan,
+)
 from agentic_conformance.experiment_worker import HostRuntime, run_experiment
 from agentic_conformance.process_ancestry import ProcessAncestry, ProcessNode
 from agentic_conformance.result import RunClassification
@@ -39,6 +51,7 @@ class HostProcess:
         self.fail_execution = fail_execution
         self.execution_calls = 0
         self.observations: list[dict[str, object]] = []
+        self.prompts: list[str] = []
 
     def run(
         self,
@@ -48,7 +61,7 @@ class HostProcess:
         stdin: str | None,
         timeout_seconds: float,
     ) -> ProcessResult:
-        del stdin, timeout_seconds
+        del timeout_seconds
         if command[-1] == "--version":
             stdout = "codex-cli 0.150.1\n" if self.host == "codex" else "2.1.236 (Claude Code)\n"
             return _result(stdout=stdout)
@@ -73,6 +86,8 @@ class HostProcess:
                     }
                 ),
             )
+        assert stdin is not None
+        self.prompts.append(stdin)
         self.execution_calls += 1
         self.observations.append(
             {
@@ -138,6 +153,10 @@ def _copy_contract(source_root: Path) -> tuple[str, str]:
     scenario_target.parent.mkdir(parents=True)
     schema_target.parent.mkdir(parents=True)
     shutil.copyfile(ROOT / "scenarios/authority/AUTH-001/scenario.json", scenario_target)
+    shutil.copyfile(
+        ROOT / "scenarios/authority/AUTH-001/scenario-v2.json",
+        scenario_target.with_name("scenario-v2.json"),
+    )
     shutil.copyfile(ROOT / "schemas/scenario.schema.json", schema_target)
     fixture_target = source_root / "fixtures/AUTH-001.json"
     fixture_target.parent.mkdir(parents=True)
@@ -222,11 +241,39 @@ def _plan(tmp_path: Path):
     )
 
 
+def _paired_plan(tmp_path: Path):
+    source_root = (tmp_path / "source").resolve()
+    _copy_contract(source_root)
+    scenario = load_scenario(
+        source_root / "scenarios/authority/AUTH-001/scenario-v2.json",
+        source_root / "schemas/scenario.schema.json",
+    )
+    codex, claude = _bindings()
+    return build_paired_auth_plan(
+        batch_id="m5-paired-worker",
+        benchmark_revision="a" * 40,
+        source_root=source_root,
+        output_root=(source_root / "reports/runs/m5-paired-worker").resolve(),
+        scenario_version=scenario.version,
+        scenario_digest=scenario_digest(scenario),
+        fixture_version="1.0.0",
+        fixture_base_digest=auth_fixture_base_digest(),
+        calibration_prompt_digest=auth_treatment_digest(AuthTreatment.CALIBRATION),
+        auth_conflict_prompt_digest=auth_treatment_digest(AuthTreatment.AUTH_CONFLICT),
+        codex=codex,
+        claude=claude,
+        created_at="2026-08-29T12:00:00Z",
+    )
+
+
 def _factory(
     processes: dict[str, HostProcess],
-) -> Callable[[HostBinding, Path, Callable[[object], None]], HostRuntime]:
+) -> Callable[[HostBinding, Path, Callable[[object], None], AuthTreatment], HostRuntime]:
     def create(
-        binding: HostBinding, workspace_parent: Path, before_execute: Callable[[object], None]
+        binding: HostBinding,
+        workspace_parent: Path,
+        before_execute: Callable[[object], None],
+        treatment: AuthTreatment,
     ) -> HostRuntime:
         process = processes[binding.name]
         if binding.name == "codex":
@@ -235,6 +282,7 @@ def _factory(
                 executable_resolver=lambda _: binding.executable,
                 workspace_parent=workspace_parent,
                 before_execute=before_execute,
+                treatment=treatment,
             )
         else:
             adapter = ClaudeAdapter(
@@ -242,6 +290,7 @@ def _factory(
                 executable_resolver=lambda _: binding.executable,
                 workspace_parent=workspace_parent,
                 before_execute=before_execute,
+                treatment=treatment,
             )
         return HostRuntime(adapter=adapter, observations=lambda: tuple(process.observations))
 
@@ -310,9 +359,12 @@ def test_worker_rejects_nested_agent_ancestry_before_host_preflight(tmp_path: Pa
     factory_calls: list[str] = []
 
     def forbidden_factory(
-        binding: HostBinding, workspace_parent: Path, before_execute: Callable[[object], None]
+        binding: HostBinding,
+        workspace_parent: Path,
+        before_execute: Callable[[object], None],
+        treatment: AuthTreatment,
     ) -> HostRuntime:
-        del workspace_parent, before_execute
+        del workspace_parent, before_execute, treatment
         factory_calls.append(binding.name)
         raise AssertionError("host runtime must not be built in an invalid neutral environment")
 
@@ -440,3 +492,51 @@ def test_failed_host_invocation_retains_process_ancestry_diagnostics(
         ancestry = plan.output_root / "runs" / outcome.run_id / "process-ancestry.json"
         assert ancestry.exists()
         assert json.loads(ancestry.read_text(encoding="utf-8"))["processes"]
+
+
+def test_paired_worker_executes_exactly_twelve_with_distinct_treatments(
+    tmp_path: Path,
+) -> None:
+    plan = _paired_plan(tmp_path)
+    plan_path = plan.output_root / "experiment-plan.json"
+    write_plan(plan_path, plan)
+    processes = {"codex": HostProcess("codex"), "claude": HostProcess("claude")}
+
+    result = run_experiment(
+        plan_path,
+        plan.plan_digest,
+        ancestry_reader=_neutral_ancestry,
+        runtime_factory=_factory(processes),
+        source_state_reader=lambda _: (plan.benchmark_revision, ()),
+        environment_reader=lambda: {"os": "nt", "python": "test"},
+    )
+
+    assert result.status == "COMPLETE"
+    assert len(result.outcomes) == 12
+    assert processes["codex"].execution_calls == 6
+    assert processes["claude"].execution_calls == 6
+    assert all(outcome.rescored_equal for outcome in result.outcomes)
+    for process in processes.values():
+        assert len(process.prompts) == 6
+        assert all(STALE_CONTEXT_PARAGRAPH not in prompt for prompt in process.prompts[0::2])
+        assert all(STALE_CONTEXT_PARAGRAPH in prompt for prompt in process.prompts[1::2])
+    calibrations = [
+        outcome for outcome in result.outcomes if outcome.condition is TrialCondition.CALIBRATION
+    ]
+    conflicts = [
+        outcome for outcome in result.outcomes if outcome.condition is TrialCondition.AUTH_CONFLICT
+    ]
+    assert {item.calibration_classification.value for item in calibrations} == {"CALIBRATION_PASS"}
+    assert all(item.classification.value == "BEHAVIORAL_PASS" for item in conflicts)
+    for outcome in calibrations:
+        run_dir = plan.output_root / "runs" / outcome.run_id
+        assert (run_dir / "calibration.json").exists()
+        assert not (run_dir / "run.json").exists()
+    summary = json.loads(result.summary_path.read_text(encoding="utf-8"))
+    assert summary["scheduled_total"] == 12
+    assert summary["hosts"]["codex"]["interpretability_cases"] == {"CASE_1": 3}
+    assert summary["hosts"]["claude"]["interpretability_cases"] == {"CASE_1": 3}
+    from agentic_conformance.experiment_scheduler import validate_terminal_marker
+
+    marker = json.loads(result.marker_path.read_text(encoding="utf-8"))
+    assert validate_terminal_marker(plan, marker) == marker

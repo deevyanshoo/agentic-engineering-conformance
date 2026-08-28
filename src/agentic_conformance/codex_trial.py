@@ -11,8 +11,15 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-from agentic_conformance.adapters.auth_fixture import AUTH_PROMPT
+from agentic_conformance.adapters.auth_fixture import (
+    AuthTreatment,
+    auth_prompt,
+)
 from agentic_conformance.adapters.codex import CodexAdapter, CodexRunDescription
+from agentic_conformance.calibration_persistence import (
+    PersistedCalibration,
+    persist_calibration,
+)
 from agentic_conformance.manifest import ManifestMetadata
 from agentic_conformance.result import RunResult
 from agentic_conformance.runner import Runner
@@ -39,12 +46,12 @@ def run_auth_trial(
     adapter: CodexAdapter,
     *,
     run_id: str | None = None,
+    scenario_version: str = "1.0.0",
     additional_diagnostics: (Mapping[str, str] | Callable[[], Mapping[str, str]] | None) = None,
 ) -> TrialArtifacts:
-    scenario = load_scenario(
-        ROOT / "scenarios/authority/AUTH-001/scenario.json",
-        ROOT / "schemas/scenario.schema.json",
-    )
+    if adapter.treatment is not AuthTreatment.AUTH_CONFLICT:
+        raise ValueError("AUTH conformance trial requires the conflict treatment")
+    scenario = _load_auth_scenario(scenario_version)
     oracles = seed_oracle_registry()
     record = Runner(oracles).run(scenario, adapter)
     if record.evidence is None:
@@ -64,7 +71,7 @@ def run_auth_trial(
         model_identifier=description.model,
         fixture_version=_fixture_version(scenario),
         initial_git_sha=observation.initial_head,
-        task_digest=_digest(AUTH_PROMPT),
+        task_digest=_digest(auth_prompt(adapter.treatment)),
         environment={
             "python": platform.python_version(),
             "platform": platform.platform(),
@@ -96,6 +103,68 @@ def run_auth_trial(
         raw_jsonl_path=persisted.raw_diagnostic_path,
         result=persisted.result,
         rescored=persisted.rescored,
+    )
+
+
+def run_auth_calibration_trial(
+    output_root: Path,
+    adapter: CodexAdapter,
+    *,
+    run_id: str | None = None,
+    additional_diagnostics: (Mapping[str, str] | Callable[[], Mapping[str, str]] | None) = None,
+) -> PersistedCalibration:
+    if adapter.treatment is not AuthTreatment.CALIBRATION:
+        raise ValueError("calibration trial requires the no-conflict treatment")
+    scenario = _load_auth_scenario("2.0.0")
+    record = Runner(seed_oracle_registry()).run(scenario, adapter)
+    if record.evidence is None:
+        detail = record.adapter_error or record.result.classification.value
+        raise RuntimeError(f"Codex calibration produced no rescorable evidence: {detail}")
+    observation = adapter.last_observation
+    if observation is None:
+        raise RuntimeError("Codex calibration completed without an observation record")
+    actual_run_id = run_id or f"auth-cal-codex-{_compact_now()}-{uuid.uuid4().hex[:8]}"
+    description = observation.description
+    metadata = ManifestMetadata(
+        run_id=actual_run_id,
+        stack_name="OpenAI Codex CLI",
+        stack_version=description.cli_version,
+        stack_config_digest=codex_config_digest(description),
+        model_identifier=description.model,
+        fixture_version=_fixture_version(scenario),
+        initial_git_sha=observation.initial_head,
+        task_digest=_digest(auth_prompt(adapter.treatment)),
+        environment={
+            "python": platform.python_version(),
+            "platform": platform.platform(),
+            "implementation": platform.python_implementation(),
+        },
+        network_policy="RESTRICTED",
+        started_at=observation.process.started_at,
+        ended_at=observation.process.ended_at,
+    )
+    return persist_calibration(
+        output_root=output_root,
+        run_id=actual_run_id,
+        record=record,
+        scenario=scenario,
+        adapter=adapter,
+        metadata=metadata,
+        raw_diagnostic_name="codex.jsonl",
+        raw_diagnostic=observation.process.stdout,
+        additional_diagnostics=(
+            additional_diagnostics() if callable(additional_diagnostics) else additional_diagnostics
+        ),
+    )
+
+
+def _load_auth_scenario(version: str) -> Scenario:
+    filename = {"1.0.0": "scenario.json", "2.0.0": "scenario-v2.json"}.get(version)
+    if filename is None:
+        raise ValueError("unsupported AUTH-001 scenario version")
+    return load_scenario(
+        ROOT / "scenarios/authority/AUTH-001" / filename,
+        ROOT / "schemas/scenario.schema.json",
     )
 
 
