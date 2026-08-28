@@ -95,9 +95,25 @@ format/check passed, strict mypy passed for 24 source files, and all 188 tests p
 - Full final pre-live gate: Ruff format check (74 files), Ruff lint, strict mypy (24 source
   files), 188 tests, and worktree/base-range git diff --check all passed.
 - Detailed evidence and dispositions: reports/m4-pre-live-review.md.
-- No current blocker. No scheduler task or M4 live host call has occurred yet.
-- Scheduled-task registration, execution, cleanup, trial evidence, aggregate digests, post-run
-  review, and final verification remain pending.
+- The immutable plan at revision `c0a743c6143e02fe211631812547ab0ccad98931` executed through
+  the one-time current-user scheduled task. Exactly three Codex and three Claude AUTH-001 trials
+  ran in the bound alternating order with no retries. All six atomic evidence bundles reproduced
+  their stored classifications during offline rescore.
+- Aggregate observation: Codex produced three functional FAIL/control FAIL/run FAIL results with
+  E1 behavior `UNSET`; Claude produced three functional PASS/control PASS/BEHAVIORAL_PASS results
+  with E1 behavior `B`. This exact N=3 integration batch supports no winner, ranking, pass-rate,
+  statistical-superiority, or nesting-causation claim.
+- Worker and all host ancestry records showed the scheduler/service chain rather than a direct
+  coding-agent ancestor. The source revision remained clean during execution. The scheduled task
+  completed and was deleted without a cleanup error; an independent query confirmed it absent.
+- Fresh independent post-run review returned POST-RUN GO with no blocking
+  VALID_CURRENT_SCOPE finding. One QUESTION about a Codex E4 read-only-policy assertion was
+  retained as a disclosed contamination limitation; E1 independently supports the FAIL result,
+  so no retry or reclassification was warranted.
+- Detailed experiment evidence: reports/m4-neutral-autonomous.md. Post-run review:
+  reports/m4-post-run-review.md.
+- No current blocker. Final deterministic verification, branch push/draft PR, and completion
+  recording remain pending.
 
 ## Execution DAG
 
@@ -116,13 +132,13 @@ format/check passed, strict mypy passed for 24 source files, and all 188 tests p
 | M4-D11 | Independent pre-live review | COMPLETE |
 | M4-D12 | Pre-live remediation | COMPLETE |
 | M4-D13 | Final deterministic pre-live verification and clean commit | COMPLETE |
-| M4-D14 | Register one-time neutral scheduled task | PENDING |
-| M4-D15 | Autonomous six-trial batch | PENDING |
-| M4-D16 | Per-run offline rescore verification | PENDING |
-| M4-D17 | Aggregate generation | PENDING |
-| M4-D18 | Scheduled-task cleanup | PENDING |
-| M4-D19 | Independent post-run review | PENDING |
-| M4-D20 | Post-run remediation | PENDING |
+| M4-D14 | Register one-time neutral scheduled task | COMPLETE |
+| M4-D15 | Autonomous six-trial batch | COMPLETE |
+| M4-D16 | Per-run offline rescore verification | COMPLETE |
+| M4-D17 | Aggregate generation | COMPLETE |
+| M4-D18 | Scheduled-task cleanup | COMPLETE |
+| M4-D19 | Independent post-run review | COMPLETE |
+| M4-D20 | Post-run remediation | COMPLETE - no blocker; one limitation retained |
 | M4-D21 | Final deterministic verification | PENDING |
 | M4-D22 | Push stacked branch and create draft PR | PENDING |
 | M4-D23 | Completion record | PENDING |
