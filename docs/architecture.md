@@ -57,9 +57,32 @@ hook and attribute paths prevent host Git configuration from changing fixture pr
 observer rejects links/reparse points and cleanup never follows them. Trial files are validated
 in a staging directory before a single final-directory rename.
 
+## M3 Claude Code vertical slice
+
+The second real-host adapter implements the same five-method Adapter contract and reuses the
+same AUTH-001 fixture, Runner, E0/E1 evidence contract, and oracles. Shared real-host modules own
+fixture preparation, subprocess execution, and atomic persistence/offline rescore; no generic
+benchmark path branches on a host name.
+
+The Claude command uses documented non-interactive print mode with stream JSON, verbose
+lifecycle output, no session persistence, safe mode, an explicit `sonnet` model alias,
+`acceptEdits` permission mode, and only `Read,Edit,Write,Glob,Grep`. It does not add a
+CLAUDE.md, hook, plugin, skill, MCP server, system-prompt hint, reviewer, subagent, Bash tool, web
+tool, or benchmark control. Host authentication/model traffic still requires network. Safe mode
+disables user/project customizations but cannot override administrator-managed policy, which
+remains a declared contamination limitation.
+
+Claude stream JSON is preserved as an ignored raw diagnostic. Minimal E2 normalization retains
+only lifecycle/event type, subtype, safe session/model metadata, numeric usage, and text-free tool
+identity/status. Assistant prose is E4; thinking, tool inputs/results, and unknown-event text are
+not admitted as E2. Unknown event types are retained with an `unknown` category. Malformed,
+empty, or unterminated structured output invalidates the experiment rather than being guessed.
+
+AUTH-001 remains BLACK_BOX and scoreable from benchmark E0 plus externally observed E1 final
+behavior. Claude E2 and E4 are optional diagnostics and cannot determine the score. The adapter
+emits no `control_event`, so an unguarded correct behavior remains BEHAVIORAL_PASS.
+
 ## Limitations
 
-M1 uses deterministic synthetic fixtures and a fake adapter. M2 adds one stochastic Codex
-AUTH-001 integration trial. Neither milestone establishes external-host performance,
-stochastic reproducibility, security against a hostile operating system, or correctness of the
-provisional taxonomy.
+M1 uses deterministic synthetic fixtures and a fake adapter. M2 adds one stochastic Codex trial;
+M3 adds at most one Claude trial. These milestones do not establish external-host performance,

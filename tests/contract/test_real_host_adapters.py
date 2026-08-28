@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -95,7 +94,7 @@ def test_real_hosts_share_adapter_contract_fixture_and_auth_semantics(
     visible_trees: list[list[str]] = []
 
     def inspect_preflight(description: object) -> None:
-        workspace = getattr(description, "workspace")
+        workspace = description.workspace
         assert isinstance(workspace, Path)
         visible_trees.append(
             sorted(

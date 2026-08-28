@@ -9,11 +9,11 @@ Completion state: `IN_PROGRESS`
 - Private repository: `deevyanshoo/agentic-engineering-conformance`.
 - `origin/main`: `c31a1a79e2f1ebebb60ee0516e3af99e5f869684`, unchanged.
 - PR #1: draft, open, unmerged; `main` <- `m2/codex-adapter`; head
-  `0b0911b695bb14e7482eb036e5adfbfe17269265`.
+  `c9474a7b8874472f14a3163d7d30a332066b3cd6`.
 - M3 branch: `m3/claude-adapter`, rebased onto that corrected M2 head in an isolated worktree.
 - M1 remains `M1_REFERENCE_COMPLETE`; M2 remains historically
   `M2_CODEX_VERTICAL_SLICE_COMPLETE`.
-- Corrected M2 gate: Ruff format/check passed, strict mypy passed for 15 source files, 119 pytest
+- Corrected M2 gate: Ruff format/check passed, strict mypy passed for 16 source files, 119 pytest
   tests passed, and working-tree/complete branch-range diff checks passed.
 - Hosted Actions started zero steps because of the recorded payment/spending-limit restriction.
 
@@ -36,10 +36,31 @@ Completion state: `IN_PROGRESS`
 
 ## Lower-layer observation
 
-The generic AUTH fixture and process seam were corrected on the owning M2 branch in
-`0b0911b695bb14e7482eb036e5adfbfe17269265`, fully verified, pushed to PR #1, and propagated by
-rebasing M3. Historical M2 completion remains unchanged; the later correction is recorded in the
-M2 execution history.
+The generic AUTH fixture, process seam, and persisted-trial/offline-rescore boundary were corrected
+on the owning M2 branch through `c9474a7b8874472f14a3163d7d30a332066b3cd6`, fully verified,
+pushed to PR #1, and propagated by rebasing M3. Historical M2 completion remains unchanged; the
+later corrections are recorded in the M2 execution history.
+
+## Deterministic implementation evidence
+
+- `ClaudeAdapter` implements the unchanged adapter contract and never calls an oracle or emits a
+  benchmark control event.
+- Command construction uses documented print/stream-JSON mode, safe mode, no session persistence,
+  explicit Sonnet selection, `acceptEdits`, and only repository read/write/search tools.
+- JSONL tests cover text-free E2 lifecycle metadata, E4 prose separation, raw preservation,
+  forward-compatible unknown events, and malformed/missing terminal output.
+- Adapter tests cover probing/authentication, exact invocation, isolated fixture preparation, E1
+  final-state capture, timeout/non-zero/missing-state paths, and cleanup containment.
+- Cross-host tests prove Codex and Claude share the same adapter interface, AUTH fixture semantics,
+  runner/oracle path, and absence of adapter-owned scoring.
+- Trial tests prove safe persistence, scenario/fixture binding, and offline rescoring without a host
+  invocation.
+- Focused gate: Ruff passed; strict mypy passed for 18 source files; 18 Claude/cross-host/trial tests
+  passed. The full M3 regression gate remains M3-D10.
+- M3-D10 full local gate: Ruff format/check passed; strict mypy passed for 18 source files; all
+  137 tests passed; branch-range and working-tree `git diff --check` passed. The initial format
+  check identified two CRLF-normalization-only test files; the configured formatter corrected them
+  before the successful full rerun.
 
 ## Execution DAG
 
@@ -49,8 +70,8 @@ M2 execution history.
 | M3-D2 | Claude CLI/auth surface reconciliation | COMPLETE |
 | M3-D3 | Stacked branch/worktree and durable record | COMPLETE |
 | M3-D4 | Generic fixture/lower-layer correction | COMPLETE |
-| M3-D5-D9 | Claude adapter and cross-host deterministic tests | PENDING |
-| M3-D10 | Full local regression gate | PENDING |
+| M3-D5-D9 | Claude adapter and cross-host deterministic tests | COMPLETE |
+| M3-D10 | Full local regression gate | COMPLETE |
 | M3-D11 | Exactly one live Claude AUTH-001 trial | PENDING |
 | M3-D12 | Stored-evidence rescore | PENDING |
 | M3-D13-D14 | Independent review and remediation | PENDING |
@@ -58,5 +79,5 @@ M2 execution history.
 | M3-D16 | Push stacked branch and draft PR | PENDING |
 | M3-D17 | Completion record | PENDING |
 
-No Claude model call has occurred. M3 host-specific implementation resumes at M3-D5; live,
+No Claude model call has occurred. M3 resumes at the full local regression gate, M3-D10; live,
 review, and completion nodes remain pending.

@@ -9,8 +9,12 @@ This repository implements a vendor-neutral benchmark for engineering-control gu
 - Prefer externally observed deterministic evidence and never let an agent assertion alone satisfy an oracle.
 - M1 remains the deterministic reference baseline. M2 adds only the scoped OpenAI Codex
   AUTH-001 vertical slice; do not infer support for other real hosts or scenarios.
-- Never run live Codex trials from normal tests or GitHub Actions, and never persist host
-  credentials in fixtures, evidence, manifests, or repository files.
+- M3 adds only the scoped Claude Code AUTH-001 vertical slice on top of M2; it is not a
+  cross-host performance comparison and does not expand scenario support.
+- Never run live Codex or Claude trials from normal tests or GitHub Actions, and never persist
+  host credentials in fixtures, evidence, manifests, or repository files.
 - Update `docs/execution/m1-reference.md` when changing M1 lifecycle state.
 - Update `docs/execution/m2-codex.md` when changing M2 lifecycle state; do not rewrite M1
   history.
+- Update `docs/execution/m3-claude.md` when changing M3 lifecycle state; keep M3 stacked on
+  M2 until PR #1 is merged or explicitly retargeted.
