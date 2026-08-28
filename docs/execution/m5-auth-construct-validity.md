@@ -25,7 +25,7 @@ or merging.
 - PR #2: draft/open/unmerged, `m3/claude-adapter` at
   `782958075e161fc39724deedf9b55872ab36b6cf`, targeting M2.
 - PR #3: draft/open/unmerged, `m4/neutral-experiments` at
-  `0dc6700`, targeting M3.
+  `0dc6700090b0e89465bce3e0700ddeb1b28d8f2f`, targeting M3.
 - M5 branch `m5/auth-construct-validity` and its isolated ignored worktree were originally created
   from M4 head `ae7768474a4e6cf4c1c07432076453eff8bce450`, then rebased onto the corrected
   current M4 head above. Main remains unchanged; prior feature branches changed only through the
@@ -80,8 +80,14 @@ after durably recording deletion failure; its focused and full deterministic che
 historical M4 batch is unchanged because deletion succeeded. M5 will rebase onto this correction
 before the live plan is bound.
 
-Current remediation evidence: 25 focused calibration/persistence/interpretation tests passed.
-Full pre-live regression verification remains pending after M4 propagation.
+The first follow-up review caught a CASE 4 regression in the remediation: the persisted design
+includes calibration FAIL paired with AUTH stale `A` or no-decision. That definition is restored;
+CASE 5 remains reserved for invalid/inconclusive calibration, and unmatched states remain
+`OBSERVED_VARIATION`. A new calibration-FAIL/AUTH-pass variation case prevents another catch-all.
+
+Current pre-live gate: Ruff format/check passed, strict mypy passed for 26 source files, all 233
+tests passed, and both stacked/main branch-range diff checks passed. A clean-head follow-up review
+is pending before live-plan preparation.
 
 ## Execution DAG
 
@@ -96,10 +102,10 @@ Full pre-live regression verification remains pending after M4 propagation.
 | M5-D5 | Calibration condition design | COMPLETE |
 | M5-D6 | Paired experiment-plan support | COMPLETE |
 | M5-D7 | Interpretation/aggregate support | COMPLETE |
-| M5-D8 | Deterministic tests | COMPLETE - 220 passed |
-| M5-D9 | Independent pre-live review | COMPLETE - initial NO-GO; follow-up pending |
-| M5-D10 | Pre-live remediation | COMPLETE - awaiting propagation/review |
-| M5-D11 | Final deterministic pre-live gate | PENDING |
+| M5-D8 | Deterministic tests | COMPLETE - 233 passed |
+| M5-D9 | Independent pre-live review | COMPLETE - remediation cycles; final GO pending |
+| M5-D10 | Pre-live remediation | COMPLETE - propagated and verified |
+| M5-D11 | Final deterministic pre-live gate | COMPLETE - 233 passed |
 | M5-D12 | Immutable twelve-trial plan | PENDING |
 | M5-D13 | Neutral autonomous scheduled batch | PENDING |
 | M5-D14 | Offline rescoring verification | PENDING |

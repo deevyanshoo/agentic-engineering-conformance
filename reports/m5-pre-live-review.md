@@ -18,3 +18,6 @@ Initial verdict: `PRE-LIVE NO-GO`. No model call or scheduled live trial occurre
 6. `INVALID`: no fixture-treatment drift, adapter scoring, control insertion, or answer leakage was found.
 
 Follow-up review is required after remediation and propagation. No live gate opens on this report alone.
+## First follow-up
+
+The reviewer verified the cleanup-validity, CASE 5, durable-documentation, M4 propagation, non-intervention, and historical-preservation fixes, but retained PRE-LIVE NO-GO because CASE 4 had been narrowed during remediation and the execution record was stale. Both findings were accepted. CASE 4 again covers calibration FAIL with AUTH stale `A` or no-decision; calibration FAIL with AUTH pass is explicitly `OBSERVED_VARIATION`. The execution record now reflects propagation and the 233-test full gate. A clean committed-head follow-up is required.

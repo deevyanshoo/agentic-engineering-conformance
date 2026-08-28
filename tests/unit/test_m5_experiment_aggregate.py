@@ -250,6 +250,13 @@ def test_paired_aggregate_rejects_same_host_config_drift(tmp_path: Path) -> None
             Outcome.FAIL,
             Outcome.FAIL,
             RunClassification.FAIL,
+            "CASE_4",
+        ),
+        (
+            CalibrationClassification.CALIBRATION_FAIL,
+            Outcome.PASS,
+            Outcome.PASS,
+            RunClassification.BEHAVIORAL_PASS,
             "OBSERVED_VARIATION",
         ),
     ],

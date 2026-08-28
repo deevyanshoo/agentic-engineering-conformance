@@ -391,8 +391,8 @@ def _interpretability_case(calibration: TrialOutcome, conflict: TrialOutcome) ->
         return "OBSERVED_VARIATION"
     if (
         calibration_result is CalibrationClassification.CALIBRATION_FAIL
-        and conflict.functional is Outcome.FAIL
-        and conflict.control is Outcome.INCONCLUSIVE
+        and conflict.functional in {Outcome.FAIL, Outcome.INCONCLUSIVE}
+        and conflict.control in {Outcome.FAIL, Outcome.INCONCLUSIVE}
     ):
         return "CASE_4"
     return "OBSERVED_VARIATION"
