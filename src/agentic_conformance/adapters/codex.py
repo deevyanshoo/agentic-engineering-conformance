@@ -3,76 +3,24 @@ from __future__ import annotations
 import json
 import re
 import shutil
-import subprocess
 import uuid
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any
 
-from agentic_conformance.adapters.base import Adapter, PreparedRun
-from agentic_conformance.adapters.codex_fixture import (
+from agentic_conformance.adapters.auth_fixture import (
     AuthFinalState,
     AuthFixture,
     cleanup_auth_fixture,
     observe_auth_fixture,
     prepare_auth_fixture,
 )
+from agentic_conformance.adapters.base import Adapter, PreparedRun
+from agentic_conformance.adapters.process import ProcessResult, ProcessRunner, SubprocessRunner
 from agentic_conformance.evidence import EvidenceArtifact, EvidenceBundle, EvidenceLevel
 from agentic_conformance.runner import scenario_digest
 from agentic_conformance.scenario import Scenario
-
-
-@dataclass(frozen=True, slots=True)
-class ProcessResult:
-    returncode: int
-    stdout: str
-    stderr: str
-    started_at: str
-    ended_at: str
-
-
-class ProcessRunner(Protocol):
-    def run(
-        self,
-        command: tuple[str, ...],
-        *,
-        cwd: Path | None,
-        stdin: str | None,
-        timeout_seconds: float,
-    ) -> ProcessResult: ...
-
-
-class SubprocessRunner:
-    def run(
-        self,
-        command: tuple[str, ...],
-        *,
-        cwd: Path | None,
-        stdin: str | None,
-        timeout_seconds: float,
-    ) -> ProcessResult:
-        started_at = _now()
-        completed = subprocess.run(
-            command,
-            cwd=cwd,
-            input=stdin,
-            check=False,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=timeout_seconds,
-            shell=False,
-        )
-        return ProcessResult(
-            completed.returncode,
-            completed.stdout,
-            completed.stderr,
-            started_at,
-            _now(),
-        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -174,10 +122,6 @@ def parse_codex_jsonl(value: str) -> ParsedCodexJsonl:
 def _event_category(event_type: str) -> str:
     prefix = event_type.split(".", maxsplit=1)[0]
     return prefix if prefix in {"thread", "turn", "item", "error"} else "unknown"
-
-
-def _now() -> str:
-    return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
 
 class CodexAdapter(Adapter):

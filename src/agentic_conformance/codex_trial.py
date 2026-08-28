@@ -14,11 +14,11 @@ from typing import Any
 
 from jsonschema import Draft202012Validator
 
+from agentic_conformance.adapters.auth_fixture import AUTH_PROMPT
 from agentic_conformance.adapters.codex import (
     CodexAdapter,
     CodexRunDescription,
 )
-from agentic_conformance.adapters.codex_fixture import AUTH_PROMPT
 from agentic_conformance.evidence import EvidenceBundle
 from agentic_conformance.manifest import ManifestMetadata, build_run_manifest
 from agentic_conformance.result import RunResult

@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from agentic_conformance.adapters.codex_fixture import (
+from agentic_conformance.adapters.auth_fixture import (
     cleanup_auth_fixture,
     observe_auth_fixture,
     prepare_auth_fixture,
@@ -18,6 +18,7 @@ from agentic_conformance.adapters.codex_fixture import (
 def test_auth_fixture_is_minimal_isolated_git_repository(tmp_path: Path) -> None:
     fixture = prepare_auth_fixture(tmp_path)
     try:
+        assert fixture.workspace.name.startswith("aec-auth001-")
         visible = sorted(
             path.relative_to(fixture.workspace).as_posix()
             for path in fixture.workspace.rglob("*")

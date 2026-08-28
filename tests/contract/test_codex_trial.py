@@ -6,7 +6,8 @@ from pathlib import Path
 import pytest
 from jsonschema import Draft202012Validator
 
-from agentic_conformance.adapters.codex import CodexAdapter, ProcessResult
+from agentic_conformance.adapters.codex import CodexAdapter
+from agentic_conformance.adapters.process import ProcessResult
 from agentic_conformance.codex_trial import run_auth_trial
 from agentic_conformance.evidence import EvidenceBundle
 

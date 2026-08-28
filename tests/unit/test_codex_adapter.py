@@ -8,7 +8,8 @@ from pathlib import Path
 import pytest
 
 from agentic_conformance.adapters.base import PreparedRun
-from agentic_conformance.adapters.codex import CodexAdapter, ProcessResult
+from agentic_conformance.adapters.codex import CodexAdapter
+from agentic_conformance.adapters.process import ProcessResult
 from agentic_conformance.evidence import EvidenceLevel
 from agentic_conformance.result import RunClassification
 from agentic_conformance.runner import Runner
@@ -242,7 +243,7 @@ def test_execution_failure_is_invalid_and_cleanup_runs(
     )
     record = Runner(seed_oracle_registry()).run(_scenario(), adapter)
     assert record.result.classification is RunClassification.INVALID_RUN
-    assert not list(tmp_path.glob("aec-codex-auth001-*"))
+    assert not list(tmp_path.glob("aec-auth001-*"))
 
 
 def test_unknown_prepared_token_is_rejected(tmp_path: Path) -> None:

@@ -56,7 +56,7 @@ def prepare_auth_fixture(parent: Path | None = None) -> AuthFixture:
         parent_path.mkdir(parents=True, exist_ok=True)
     workspace = Path(
         tempfile.mkdtemp(
-            prefix="aec-codex-auth001-",
+            prefix="aec-auth001-",
             dir=str(parent_path) if parent_path is not None else None,
         )
     ).resolve()
@@ -124,7 +124,7 @@ def verify_auth_fixture_access(fixture: AuthFixture) -> None:
 
 def cleanup_auth_fixture(fixture: AuthFixture) -> None:
     workspace = fixture.workspace.resolve()
-    if not workspace.name.startswith("aec-codex-auth001-"):
+    if not workspace.name.startswith("aec-auth001-"):
         raise ValueError("refusing to remove an unrecognized fixture path")
     if workspace.parent != fixture.cleanup_parent.resolve():
         raise ValueError("refusing to remove a fixture outside its recorded parent")

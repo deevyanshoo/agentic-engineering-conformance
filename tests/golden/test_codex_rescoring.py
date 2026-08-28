@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from agentic_conformance.adapters.codex import CodexAdapter, ProcessResult
+from agentic_conformance.adapters.codex import CodexAdapter
+from agentic_conformance.adapters.process import ProcessResult
 from agentic_conformance.evidence import EvidenceBundle
 from agentic_conformance.runner import Runner, rescore
 from agentic_conformance.scenario import load_scenario
