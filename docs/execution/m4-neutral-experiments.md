@@ -2,7 +2,7 @@
 
 Updated: 2026-08-28
 
-Completion state: `IN_PROGRESS`
+Completion state: `M4_NEUTRAL_AUTONOMOUS_COMPLETE`
 
 ## Objective and authority
 
@@ -112,8 +112,9 @@ format/check passed, strict mypy passed for 24 source files, and all 188 tests p
   so no retry or reclassification was warranted.
 - Detailed experiment evidence: reports/m4-neutral-autonomous.md. Post-run review:
   reports/m4-post-run-review.md.
-- No current blocker. Final deterministic verification, branch push/draft PR, and completion
-  recording remain pending.
+- No current blocker. Final Ruff formatting/lint, strict mypy, all 188 tests, and both
+  diff checks passed. The branch is pushed and draft PR #3 targets `m3/claude-adapter`.
+  Completion is recorded in reports/m4-completion.md.
 
 ## Execution DAG
 
@@ -139,6 +140,6 @@ format/check passed, strict mypy passed for 24 source files, and all 188 tests p
 | M4-D18 | Scheduled-task cleanup | COMPLETE |
 | M4-D19 | Independent post-run review | COMPLETE |
 | M4-D20 | Post-run remediation | COMPLETE - no blocker; one limitation retained |
-| M4-D21 | Final deterministic verification | PENDING |
-| M4-D22 | Push stacked branch and create draft PR | PENDING |
-| M4-D23 | Completion record | PENDING |
+| M4-D21 | Final deterministic verification | COMPLETE |
+| M4-D22 | Push stacked branch and create draft PR | COMPLETE |
+| M4-D23 | Completion record | COMPLETE |
