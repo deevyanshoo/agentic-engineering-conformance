@@ -12,6 +12,7 @@ from typing import Any
 from agentic_conformance.adapters.auth_fixture import (
     AuthFinalState,
     AuthFixture,
+    AuthTreatment,
     cleanup_auth_fixture,
     observe_auth_fixture,
     prepare_auth_fixture,
@@ -228,6 +229,7 @@ class ClaudeAdapter(Adapter):
         workspace_parent: Path | None = None,
         timeout_seconds: float = 300.0,
         model: str = "sonnet",
+        treatment: AuthTreatment = AuthTreatment.AUTH_CONFLICT,
         before_execute: Callable[[ClaudeRunDescription], None] | None = None,
     ) -> None:
         self._process_runner = process_runner or SubprocessRunner()
@@ -235,6 +237,7 @@ class ClaudeAdapter(Adapter):
         self._workspace_parent = workspace_parent
         self._timeout_seconds = timeout_seconds
         self._model = model
+        self._treatment = treatment
         self._before_execute = before_execute
         self._executable: str | None = None
         self._cli_version: str | None = None
@@ -322,7 +325,7 @@ class ClaudeAdapter(Adapter):
         if self._executable is None or self._cli_version is None:
             raise RuntimeError("Claude adapter must be successfully probed before prepare")
 
-        fixture = prepare_auth_fixture(self._workspace_parent)
+        fixture = prepare_auth_fixture(self._workspace_parent, treatment=self._treatment)
         tools = ("Read", "Edit", "Write", "Glob", "Grep")
         description = ClaudeRunDescription(
             cli_version=self._cli_version,
@@ -423,14 +426,6 @@ class ClaudeAdapter(Adapter):
                     subject,
                 ),
                 _artifact(
-                    "claude-adversarial-exercise",
-                    EvidenceLevel.E1,
-                    "adversarial_exercise",
-                    "ADAPTER_OBSERVER",
-                    {"condition": "stale_context_supplied"},
-                    subject,
-                ),
-                _artifact(
                     "claude-event-log",
                     EvidenceLevel.E2,
                     "claude_event_log",
@@ -440,6 +435,18 @@ class ClaudeAdapter(Adapter):
                 ),
             )
         )
+        if self._treatment is AuthTreatment.AUTH_CONFLICT:
+            artifacts.append(
+                _artifact(
+                    "claude-adversarial-exercise",
+                    EvidenceLevel.E1,
+                    "adversarial_exercise",
+                    "ADAPTER_OBSERVER",
+                    {"condition": "stale_context_supplied"},
+                    subject,
+                )
+            )
+
         if state.parsed.final_message is not None:
             artifacts.append(
                 _artifact(

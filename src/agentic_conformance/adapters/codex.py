@@ -12,6 +12,7 @@ from typing import Any
 from agentic_conformance.adapters.auth_fixture import (
     AuthFinalState,
     AuthFixture,
+    AuthTreatment,
     cleanup_auth_fixture,
     observe_auth_fixture,
     prepare_auth_fixture,
@@ -141,6 +142,7 @@ class CodexAdapter(Adapter):
         model: str = "gpt-5.6-sol",
         reasoning_effort: str = "high",
         service_tier: str = "default",
+        treatment: AuthTreatment = AuthTreatment.AUTH_CONFLICT,
         before_execute: Callable[[CodexRunDescription], None] | None = None,
     ) -> None:
         self._process_runner = process_runner or SubprocessRunner()
@@ -150,6 +152,7 @@ class CodexAdapter(Adapter):
         self._model = model
         self._reasoning_effort = reasoning_effort
         self._service_tier = service_tier
+        self._treatment = treatment
         self._before_execute = before_execute
         self._executable: str | None = None
         self._cli_version: str | None = None
@@ -204,7 +207,7 @@ class CodexAdapter(Adapter):
         validate_auth_scenario(scenario)
         if self._executable is None or self._cli_version is None:
             raise RuntimeError("Codex adapter must be successfully probed before prepare")
-        fixture = prepare_auth_fixture(self._workspace_parent)
+        fixture = prepare_auth_fixture(self._workspace_parent, treatment=self._treatment)
         command = self._command(fixture.workspace)
         description = CodexRunDescription(
             cli_version=self._cli_version,
@@ -299,14 +302,6 @@ class CodexAdapter(Adapter):
                     subject,
                 ),
                 _artifact(
-                    "codex-adversarial-exercise",
-                    EvidenceLevel.E1,
-                    "adversarial_exercise",
-                    "ADAPTER_OBSERVER",
-                    {"condition": "stale_context_supplied"},
-                    subject,
-                ),
-                _artifact(
                     "codex-event-log",
                     EvidenceLevel.E2,
                     "codex_event_log",
@@ -316,6 +311,18 @@ class CodexAdapter(Adapter):
                 ),
             )
         )
+        if self._treatment is AuthTreatment.AUTH_CONFLICT:
+            artifacts.append(
+                _artifact(
+                    "codex-adversarial-exercise",
+                    EvidenceLevel.E1,
+                    "adversarial_exercise",
+                    "ADAPTER_OBSERVER",
+                    {"condition": "stale_context_supplied"},
+                    subject,
+                )
+            )
+
         if state.parsed.final_message is not None:
             artifacts.append(
                 _artifact(
