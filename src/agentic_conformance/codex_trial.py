@@ -15,7 +15,7 @@ from agentic_conformance.adapters.codex import CodexAdapter, CodexRunDescription
 from agentic_conformance.manifest import ManifestMetadata
 from agentic_conformance.result import RunResult
 from agentic_conformance.runner import Runner
-from agentic_conformance.scenario import load_scenario
+from agentic_conformance.scenario import Scenario, load_scenario
 from agentic_conformance.seed_oracles import seed_oracle_registry
 from agentic_conformance.trial_persistence import persist_trial
 
@@ -55,7 +55,7 @@ def run_auth_trial(output_root: Path, adapter: CodexAdapter) -> TrialArtifacts:
         stack_version=description.cli_version,
         stack_config_digest=_config_digest(description),
         model_identifier=description.model,
-        fixture_version=scenario.version,
+        fixture_version=_fixture_version(scenario),
         initial_git_sha=observation.initial_head,
         task_digest=_digest(AUTH_PROMPT),
         environment={
@@ -120,6 +120,13 @@ def _config_digest(description: CodexRunDescription) -> str:
         "repository_rules_ignored": description.repository_rules_ignored,
     }
     return _digest(json.dumps(value, sort_keys=True, separators=(",", ":")))
+
+
+def _fixture_version(scenario: Scenario) -> str:
+    value = scenario.ground_truth.get("fixture_version")
+    if not isinstance(value, str):
+        raise RuntimeError("AUTH-001 fixture version is unavailable")
+    return value
 
 
 def _digest(value: str) -> str:

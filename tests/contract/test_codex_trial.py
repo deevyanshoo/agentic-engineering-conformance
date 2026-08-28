@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -9,10 +10,19 @@ from jsonschema import Draft202012Validator
 from agentic_conformance import trial_persistence
 from agentic_conformance.adapters.codex import CodexAdapter
 from agentic_conformance.adapters.process import ProcessResult
-from agentic_conformance.codex_trial import run_auth_trial
+from agentic_conformance.codex_trial import _fixture_version, run_auth_trial
 from agentic_conformance.evidence import EvidenceBundle
+from agentic_conformance.scenario import load_scenario
 
 ROOT = Path(__file__).parents[2]
+
+
+def test_fixture_version_is_bound_to_ground_truth_not_scenario_version() -> None:
+    scenario = load_scenario(
+        ROOT / "scenarios/authority/AUTH-001/scenario.json",
+        ROOT / "schemas/scenario.schema.json",
+    )
+    assert _fixture_version(replace(scenario, version="2.0.0")) == "1.0.0"
 
 
 class TrialProcessRunner:
