@@ -34,7 +34,7 @@ Prepare a credible, safe, reproducible private launch candidate for provisional 
 | M6-D9 | Independent pre-live experiment review | COMPLETE |
 | M6-D10 | Twelve-slot neutral successor validation batch | COMPLETE |
 | M6-D11 | Evidence/rescore/aggregate interpretation | COMPLETE |
-| M6-D12 | Clean-clone reproducibility test | PENDING |
+| M6-D12 | Clean-clone reproducibility test | COMPLETE |
 | M6-D13 | CI/public verification strategy | COMPLETE |
 | M6-D14 | Draft release notes/version metadata | COMPLETE |
 | M6-D15 | Independent engineering launch review | PENDING |
@@ -94,3 +94,6 @@ Unresolved blockers: none at reconciliation.
 - `docs/ci.md` records the exact deterministic contributor gate and the truthful private-repository Actions limitation. The workflow has no live host calls or model secrets; no green hosted status is claimed.
 - After an authorized public visibility change, one deterministic workflow run will test whether public-repository Actions availability changes. Until then, local and clean-clone command evidence is authoritative.
 - Draft `v0.1.0-alpha.1` notes exist without a tag or release. Python metadata uses the PEP 440 equivalent `0.1.0a1`.
+## Clean-clone reproduction
+
+At exact revision `dc33e29f70948d83f0ebb4405d12cf6ddcf36721`, a new local clone and virtual environment completed the documented install, Ruff format/check, strict mypy, 241-test suite, and deterministic reference evidence/offline-rescore example. The checkout was initially clean; only the expected generated evidence file appeared. No host process ran. The validated temporary directory was removed. Evidence: `reports/m6-clean-clone.md`.
