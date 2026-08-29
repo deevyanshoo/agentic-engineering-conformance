@@ -2,7 +2,9 @@
 
 Date: 2026-08-29
 
-Scope: the complete M6 working tree (including untracked launch-candidate files) and all 58 commits reachable from local/remote refs across `main` and the M2-M6 stack. Values matching sensitive patterns were never printed; scans reported paths/counts only.
+Exact audited head after pre-live remediation: `0ca1a705c882e3508a79ac10cbc2ba345f51375d`
+
+Scope: the complete M6 working tree (including untracked launch-candidate files) and all 64 commits reachable from local/remote refs across `main` and the M2-M6 stack. Values matching sensitive patterns were never printed; scans reported paths/counts only.
 
 ## Current-tree results
 

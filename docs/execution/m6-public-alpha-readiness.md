@@ -59,7 +59,7 @@ Unresolved blockers: none at reconciliation.
 - Apache-2.0 now unambiguously covers all repository-authored code, schemas, scenarios, fixtures, data, docs, examples, and contributions.
 - README, claim/non-claim register, prior art, contributor/security/community guidance, evidence policy, roadmap, and alpha version metadata are launch-facing.
 - A deterministic reference CLI now writes synthetic AUTH-001 evidence and proves offline rescore equality; its focused tests pass.
-- Current-tree and all 58 reachable-commit scans found no high-confidence secret, credential assignment, suspicious tracked artifact, oversized blob, or proprietary contamination. Two harmless historical local paths remain only in old commits; current display paths are sanitized. Evidence: `reports/m6-privacy-history-audit.md`.
+- Current-tree and all 64 reachable-commit scans found no high-confidence secret, credential assignment, suspicious tracked artifact, oversized blob, or proprietary contamination. Two harmless historical local paths remain only in old commits; current display paths are sanitized. Evidence: `reports/m6-privacy-history-audit.md`.
 - Full public-hardening gate: Ruff format/check passed, strict mypy passed for 27 source files, and all 236 tests passed in 44.96 seconds.
 
 ## Successor launch-validation design
@@ -71,3 +71,10 @@ Unresolved blockers: none at reconciliation.
 - Task Scheduler query confirms no task with the intended M6 preflight name exists. The controller remains current-user, InteractiveToken, least privilege, without stored credentials.
 - The repaired fixture root regression plus paired plan/aggregate tests pass: 17 focused tests in 8.61 seconds.
 - The immutable plan will be created only after a fresh independent pre-live reviewer returns GO against a clean committed revision.
+## Independent pre-live review and remediation
+
+- Fresh reviewer verdict at `961eebb`: PRE-LIVE NO-GO.
+- `VALID_CURRENT_SCOPE` blocker: a shell-writer error embedded command text in `docs/charter.md` and left ADR 0002 empty. Root cause was copied patch-prefix text terminating the intended here-string incorrectly. A failing contract test reproduced both artifacts; `0ca1a70` rewrites the documents independently and the test now passes.
+- `VALID_CURRENT_SCOPE` blocker: current public derivatives replaced two harmless historical executable paths but still described them as exact. The current M2/M3 records now label the substitutions as public-sanitized displays and state that original commits retain the absolute path. Historical commits remain unchanged.
+- Reviewer question: the first audit covered 58 commits, fewer than the reviewed head. The complete scan was rerun at clean remediation head `0ca1a705c882e3508a79ac10cbc2ba345f51375d` across all 64 reachable commits: zero high-confidence secret, credential-assignment, or private-project sentinel matches; no suspicious artifact filenames or blobs above 1 MiB.
+- Live execution remains closed pending focused independent follow-up.

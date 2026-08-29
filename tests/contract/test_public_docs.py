@@ -21,3 +21,14 @@ def test_sanitized_historical_commands_are_labeled_as_derivatives() -> None:
     assert "Public-sanitized ordered argv" in m3
     assert "original historical commit retains the local absolute path" in m2
     assert "original historical commit retains the local absolute path" in m3
+
+
+def test_public_markdown_has_no_literal_shell_newline_artifacts() -> None:
+    paths = (
+        ROOT / "docs/charter.md",
+        ROOT / "docs/decisions/0002-public-alpha-policy.md",
+        ROOT / "docs/execution/m6-public-alpha-readiness.md",
+        ROOT / "reports/m6-privacy-history-audit.md",
+    )
+    for path in paths:
+        assert "`r`n" not in path.read_text(encoding="utf-8"), path
