@@ -39,7 +39,7 @@ Prepare a credible, safe, reproducible private launch candidate for provisional 
 | M6-D14 | Draft release notes/version metadata | COMPLETE |
 | M6-D15 | Independent engineering launch review | COMPLETE |
 | M6-D16 | Independent public/claims review | COMPLETE |
-| M6-D17 | Finding remediation | IN_PROGRESS |
+| M6-D17 | Finding remediation | COMPLETE |
 | M6-D18 | Final deterministic verification | PENDING |
 | M6-D19 | Exact stacked-merge/publication plan | PENDING |
 | M6-D20 | PUBLIC_ALPHA_READY record | PENDING |
@@ -104,3 +104,4 @@ At exact revision `dc33e29f70948d83f0ebb4405d12cf6ddcf36721`, a new local clone 
 - Commit `8872400` remediates every accepted current-scope finding with public contract coverage. The current-tree/history audit was rerun across 147 files and 70 reachable commits: no secret, credential assignment, proprietary sentinel, current absolute path, current machine principal, suspicious artifact, or large blob.
 - Historical M2/M3 local executable paths and M4 principal remain only in old commits as harmless provenance; current derivatives are sanitized and labeled. No history rewrite is justified.
 - Engineering evidence: `reports/m6-engineering-launch-review.md`. Public/claims evidence: `reports/m6-public-claims-review.md`. Follow-up public/claims verification remains pending before D17 closes.
+Public/claims focused follow-up at clean `7e9c55e`: GO. All blocking findings are independently closed. The CI workflow also exposes a deterministic manual dispatch so the post-visibility availability probe needs no dummy commit.

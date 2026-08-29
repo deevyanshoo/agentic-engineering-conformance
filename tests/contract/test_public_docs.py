@@ -80,5 +80,6 @@ def test_public_launch_review_remediations_remain_present() -> None:
     assert "remain experimentally unresolved until" not in architecture
     assert "this project's initial vendor-neutral reference vertical slice" in release
     assert "python -m ruff format --check ." in workflow
+    assert "workflow_dispatch:" in workflow
     assert "version-pinned AUTH-001 v1" in readme
     assert "documented deterministic gates" in clean_clone

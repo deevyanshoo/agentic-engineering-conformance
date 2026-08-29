@@ -24,7 +24,7 @@ The launch strategy is:
 
 1. rely on recorded local and fresh-clone deterministic evidence while the repository remains private;
 2. keep the deterministic workflow present but not describe it as passing or require it for publication;
-3. after an authorized public visibility transition, run exactly one deterministic workflow to learn whether public-repository hosted Actions are available;
+3. after an authorized public visibility transition, manually dispatch exactly one deterministic workflow to learn whether public-repository hosted Actions are available;
 4. claim green hosted CI only if that repository-owned run executes and passes; otherwise retain the reproducible local gate and document the external limitation.
 
 No purchase, secret, live-model workflow, weakened test, or fabricated status is part of this strategy.

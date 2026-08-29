@@ -15,3 +15,6 @@ Initial verdict: **PUBLIC/CLAIMS LAUNCH NO-GO**.
 - Low `VALID_OUT_OF_SCOPE`, nonblocking: harmless old local executable paths remain in history. Historical provenance remains intact and current derivatives stay sanitized.
 
 The reviewer otherwise found the README, claim register, M5/M6 distinction, AUTH/calibration wording, prior art, naming assessment, licensing, contributor/security documents, CI disclosure, links, artifact exclusions, and aggregate narrative credible and appropriately limited. A focused read-only follow-up is required to close the three remediated blockers.
+## Focused follow-up
+
+At clean head `7e9c55ec614602c152abf06516c1a12d044a2633`, the same independent reviewer verified every blocker closed and returned **PUBLIC/CLAIMS LAUNCH GO**. It confirmed current M4 derivatives contain no principal, the historical disposition is explicit, the regression covers the issue, architecture records the M6 successor, release wording is project-scoped, clean-clone wording is accurate, the remediated-head audit counts match Git, and the new reports introduce no privacy or claims defect. Six focused public-document contracts and both diff checks passed. Final exact-head audit remains D18, not an open review finding.
