@@ -41,7 +41,7 @@ Prepare a credible, safe, reproducible private launch candidate for provisional 
 | M6-D16 | Independent public/claims review | COMPLETE |
 | M6-D17 | Finding remediation | COMPLETE |
 | M6-D18 | Final deterministic verification | PENDING |
-| M6-D19 | Exact stacked-merge/publication plan | PENDING |
+| M6-D19 | Exact stacked-merge/publication plan | COMPLETE |
 | M6-D20 | PUBLIC_ALPHA_READY record | PENDING |
 
 ## Decisions and limitations
@@ -105,3 +105,8 @@ At exact revision `dc33e29f70948d83f0ebb4405d12cf6ddcf36721`, a new local clone 
 - Historical M2/M3 local executable paths and M4 principal remain only in old commits as harmless provenance; current derivatives are sanitized and labeled. No history rewrite is justified.
 - Engineering evidence: `reports/m6-engineering-launch-review.md`. Public/claims evidence: `reports/m6-public-claims-review.md`. Follow-up public/claims verification remains pending before D17 closes.
 Public/claims focused follow-up at clean `7e9c55e`: GO. All blocking findings are independently closed. The CI workflow also exposes a deterministic manual dispatch so the post-visibility availability probe needs no dummy commit.
+## Private draft PR and publication plan
+
+- M6 draft PR #5 targets `m5/auth-construct-validity`; at creation its head was `fe750149d9b1d8d672ced0d1cedeb7e5a65caaac`. Repository visibility remained PRIVATE.
+- `docs/publication-plan.md` fixes integration order #1 through #5, normal merge commits, downstream retarget checks, post-integration clean-clone/audit gates, public visibility transition, one manual deterministic CI dispatch, and prerelease/tag steps.
+- All consequential integration, visibility, tag, and release actions remain reserved for founder authorization.

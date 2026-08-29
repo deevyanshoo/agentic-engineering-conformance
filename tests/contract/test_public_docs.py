@@ -83,3 +83,15 @@ def test_public_launch_review_remediations_remain_present() -> None:
     assert "workflow_dispatch:" in workflow
     assert "version-pinned AUTH-001 v1" in readme
     assert "documented deterministic gates" in clean_clone
+
+
+def test_publication_plan_is_explicit_and_nonexecuting() -> None:
+    plan = (ROOT / "docs/publication-plan.md").read_text(encoding="utf-8")
+
+    for pr in ("PR #1", "PR #2", "PR #3", "PR #4", "PR #5"):
+        assert pr in plan
+    assert "#1 -> #2 -> #3 -> #4 -> #5" in plan
+    assert "No auto-merge" in plan
+    assert "No squash" in plan
+    assert "Founder authorization required" in plan
+    assert "v0.1.0-alpha.1" in plan
