@@ -4,7 +4,7 @@ Date: 2026-08-29
 
 Revision tested: `dc33e29f70948d83f0ebb4405d12cf6ddcf36721`
 
-A fresh local clone was created in a newly generated system temporary directory with `git clone --no-local --branch m6/public-alpha-readiness`. The initial checkout was clean. A new virtual environment was created and only the documented deterministic quickstart commands were used.
+A fresh local clone was created in a newly generated system temporary directory with `git clone --no-local --branch m6/public-alpha-readiness`. The initial checkout was clean. A new virtual environment was created and only the documented deterministic gates were used.
 
 | Command | Outcome |
 | --- | --- |

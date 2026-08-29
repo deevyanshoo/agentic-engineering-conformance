@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).parents[2]
@@ -57,3 +58,27 @@ def test_public_release_surface_is_complete() -> None:
     assert "draft" in release.lower()
     assert "AUTH-001 v1" in release
     assert "AUTH-001 v2" in release
+
+
+def test_public_launch_review_remediations_remain_present() -> None:
+    m4_docs = (
+        ROOT / "docs/execution/m4-neutral-experiments.md",
+        ROOT / "reports/m4-neutral-autonomous.md",
+    )
+    principal = re.compile(r"\b(?:desktop|laptop)-[a-z0-9-]+\\{1,2}[a-z0-9._-]+\b", re.I)
+    for path in m4_docs:
+        text = path.read_text(encoding="utf-8")
+        assert principal.search(text) is None, path
+        assert "Public-sanitized execution identity" in text, path
+
+    architecture = (ROOT / "docs/architecture.md").read_text(encoding="utf-8")
+    release = (ROOT / "docs/releases/v0.1.0-alpha.1.md").read_text(encoding="utf-8")
+    workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    clean_clone = (ROOT / "reports/m6-clean-clone.md").read_text(encoding="utf-8")
+
+    assert "remain experimentally unresolved until" not in architecture
+    assert "this project's initial vendor-neutral reference vertical slice" in release
+    assert "python -m ruff format --check ." in workflow
+    assert "version-pinned AUTH-001 v1" in readme
+    assert "documented deterministic gates" in clean_clone

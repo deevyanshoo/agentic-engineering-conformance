@@ -60,7 +60,7 @@ Run one deterministic reference case, persist its synthetic evidence, and prove 
 python -m agentic_conformance.reference_demo --output reference-evidence.json
 ```
 
-The command reports the original classification and `offline_rescore_equal: true`. The generated file is synthetic reference evidence, not a real-host result.
+The command reports the original classification and `offline_rescore_equal: true`. It intentionally uses version-pinned AUTH-001 v1 to demonstrate historical replay; the guarded reference outcome is not a claim about current real-host behavior. The generated file is synthetic reference evidence, not a real-host result.
 
 ## Architecture at a glance
 
