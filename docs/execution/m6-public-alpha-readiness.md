@@ -25,13 +25,13 @@ Prepare a credible, safe, reproducible private launch candidate for provisional 
 | --- | --- | --- |
 | M6-D1 | Git/GitHub/stack reconciliation | COMPLETE |
 | M6-D2 | M6 branch/worktree and launch execution record | COMPLETE |
-| M6-D3 | Naming and licensing closure | PENDING |
-| M6-D4 | Public README/positioning/claims | PENDING |
-| M6-D5 | Contribution/security/community docs | PENDING |
-| M6-D6 | Current-tree privacy/proprietary scan | PENDING |
-| M6-D7 | Complete Git-history privacy/secret scan | PENDING |
-| M6-D8 | Launch-validation experiment design | PENDING |
-| M6-D9 | Independent pre-live experiment review | PENDING |
+| M6-D3 | Naming and licensing closure | COMPLETE |
+| M6-D4 | Public README/positioning/claims | COMPLETE |
+| M6-D5 | Contribution/security/community docs | COMPLETE |
+| M6-D6 | Current-tree privacy/proprietary scan | COMPLETE |
+| M6-D7 | Complete Git-history privacy/secret scan | COMPLETE |
+| M6-D8 | Launch-validation experiment design | COMPLETE |
+| M6-D9 | Independent pre-live experiment review | IN_PROGRESS |
 | M6-D10 | Twelve-slot neutral successor validation batch | PENDING |
 | M6-D11 | Evidence/rescore/aggregate interpretation | PENDING |
 | M6-D12 | Clean-clone reproducibility test | PENDING |
@@ -53,3 +53,21 @@ Prepare a credible, safe, reproducible private launch candidate for provisional 
 - Use local/clean-clone verification now; probe public Actions once after an authorized visibility change before claiming green hosted CI.
 
 Unresolved blockers: none at reconciliation.
+## Public hardening and audit evidence
+
+- Exact-title/slug searches found no blocking GitHub or PyPI collision; broad `agentic engineering` usage is established and `AEC` will not be promoted as a unique acronym. This is not legal clearance.
+- Apache-2.0 now unambiguously covers all repository-authored code, schemas, scenarios, fixtures, data, docs, examples, and contributions.
+- README, claim/non-claim register, prior art, contributor/security/community guidance, evidence policy, roadmap, and alpha version metadata are launch-facing.
+- A deterministic reference CLI now writes synthetic AUTH-001 evidence and proves offline rescore equality; its focused tests pass.
+- Current-tree and all 58 reachable-commit scans found no high-confidence secret, credential assignment, suspicious tracked artifact, oversized blob, or proprietary contamination. Two harmless historical local paths remain only in old commits; current display paths are sanitized. Evidence: `reports/m6-privacy-history-audit.md`.
+- Full public-hardening gate: Ruff format/check passed, strict mypy passed for 27 source files, and all 236 tests passed in 44.96 seconds.
+
+## Successor launch-validation design
+
+- New experiment identity: `m6-alpha-validation-20260829`; it is not an M5 retry or replacement.
+- Exact plan shape: AUTH-001 v2 plus no-conflict calibration, three calibration and three conflict slots per host, twelve total in the existing paired order, BLACK_BOX, RESTRICTED, zero retries.
+- Codex preflight: CLI 0.150.1, ChatGPT subscription authentication available.
+- Claude preflight: CLI 2.1.236, first-party `claude.ai` Pro subscription authentication available. Email, organization ID/name, and credentials observed by the CLI are not persisted.
+- Task Scheduler query confirms no task with the intended M6 preflight name exists. The controller remains current-user, InteractiveToken, least privilege, without stored credentials.
+- The repaired fixture root regression plus paired plan/aggregate tests pass: 17 focused tests in 8.61 seconds.
+- The immutable plan will be created only after a fresh independent pre-live reviewer returns GO against a clean committed revision.
