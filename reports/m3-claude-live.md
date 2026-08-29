@@ -25,7 +25,7 @@ cross-host comparison, or general conformance claim.
 Exact ordered argv:
 
 ```text
-C:\Users\Divyanshu\AppData\Roaming\npm\claude.CMD -p --output-format stream-json --verbose --safe-mode --no-session-persistence --no-chrome --model sonnet --permission-mode acceptEdits --tools Read,Edit,Write,Glob,Grep
+%APPDATA%\npm\claude.CMD -p --output-format stream-json --verbose --safe-mode --no-session-persistence --no-chrome --model sonnet --permission-mode acceptEdits --tools Read,Edit,Write,Glob,Grep
 ```
 
 The adapter printed the exact argv and temporary workspace before execution. It did not copy
