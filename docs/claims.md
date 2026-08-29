@@ -1,16 +1,37 @@
-# Claims and non-claims
+# Public claim register
 
-## M1 claims
+This register defines the strongest claims supported by the repository. A passing result is scoped to its declared scenario, stack configuration, and admissible evidence; it is not a general certification.
 
-When its deterministic suite passes, M1 supports only the claim that the reference implementation can validate its contracts, negotiate capabilities, collect fake normalized evidence without adapter scoring, distinguish all six result classes, keep functional/control results separate, score six synthetic scenarios, and rescore stored evidence.
+## What we claim
 
-The potential broader contribution is a vendor-neutral adversarial conformance framework for engineering-control guarantees around coding-agent stacks. That remains a hypothesis until evaluation evidence supports it.
+- A host-neutral five-method adapter abstraction is exercised by the deterministic reference adapter and independently implemented by OpenAI Codex and Claude Code adapters.
+- Six synthetic reference scenarios cover the provisional AUTH, MUT, COMP, REV, INV, and REC domains with deterministic functional and control oracles.
+- The result model separates functional success from control preservation and distinguishes guarded from merely behavioral passes.
+- Scenario ground truth is benchmark-owned; externally observed deterministic E1 evidence is preferred, and E4 agent assertions cannot satisfy a deterministic oracle alone.
+- Stored evidence can be validated and rescored without executing the adapter or host again.
+- AUTH-001 versioning preserves historical v1 replay while v2 distinguishes stale selection from an observed no-decision state.
+- A separate no-conflict calibration can test the useful mutation without calling its outcome AUTH conformance.
+- A digest-bound worker can be launched through current-user, least-privilege Windows Task Scheduler and records best-effort ancestry, source binding, outcomes, offline rescores, and task cleanup.
+- M1-M5 development included independent read-only reviews whose findings and dispositions remain in repository reports.
 
-## Explicit non-claims
+## What remains experimental
 
-The project does not claim invention of evidence-gated completion, proof of done, deterministic verification gates, independent or risk-proportionate review, task DAGs, worktree isolation, persistent agent task state, context-loss recovery, agentic control planes, dependency invalidation, incident-to-eval, trace/provenance, or multi-agent orchestration.
+- Completeness and construct validity of the six-domain taxonomy.
+- AUTH construct validity across real hosts and configurations.
+- Portability and neutrality of the Windows Task Scheduler approach beyond the recorded current-user Windows context.
+- Stochastic reliability, repeatability at useful sample sizes, and cross-host comparative performance.
+- Effectiveness of any particular workflow, hook set, methodology, or control mechanism.
+- Real-host support for MUT, COMP, REV, INV, and REC; current real adapters cover AUTH-001 only.
+- Security of the host, operating system, credentials, network, or supply chain.
 
-M1 does not claim that its six domains are exhaustive, that a mechanism is universally superior, that a reference-adapter result predicts a real host, that deterministic oracles cover semantic code quality, or that passing implies safety/security/correctness outside the declared invariant and evidence contract.
+## What we do not claim
 
-No composite score, certification, leaderboard, merge readiness, or publication status is claimed.
+- The first agentic engineering control plane, evidence-gated coding workflow, proof-of-done system, task DAG, independent agent review, dependency invalidation system, incident-to-eval system, durable agent-state system, or multi-agent orchestrator.
+- A new Agent Skills, telemetry, trace, provenance, evidence-signature, Git, CI, or workflow standard.
+- Codex versus Claude superiority, a winner, pass-rate advantage, model ranking, composite score, or leaderboard.
+- Production security certification, a complete agent-safety framework, or proof that a stack is safe outside the exact declared invariant.
+- Validation of all six domains against real hosts.
+- That a reference-adapter result predicts a stochastic host result.
+- Novelty or legal priority for the phrase "Agentic Engineering Conformance."
 
+The candidate contribution is a vendor-neutral adversarial conformance framework for engineering-control guarantees around coding-agent stacks. That remains a research hypothesis, not a novelty claim. See [prior art](prior-art.md).
