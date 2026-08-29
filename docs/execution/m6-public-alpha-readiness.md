@@ -31,7 +31,7 @@ Prepare a credible, safe, reproducible private launch candidate for provisional 
 | M6-D6 | Current-tree privacy/proprietary scan | COMPLETE |
 | M6-D7 | Complete Git-history privacy/secret scan | COMPLETE |
 | M6-D8 | Launch-validation experiment design | COMPLETE |
-| M6-D9 | Independent pre-live experiment review | IN_PROGRESS |
+| M6-D9 | Independent pre-live experiment review | COMPLETE |
 | M6-D10 | Twelve-slot neutral successor validation batch | PENDING |
 | M6-D11 | Evidence/rescore/aggregate interpretation | PENDING |
 | M6-D12 | Clean-clone reproducibility test | PENDING |
