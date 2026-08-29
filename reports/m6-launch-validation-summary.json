@@ -1,0 +1,152 @@
+{
+  "batch_id": "m6-alpha-validation-20260829",
+  "hosts": {
+    "claude": {
+      "auth_conflict": {
+        "classifications": {
+          "BEHAVIORAL_PASS": 3,
+          "FAIL": 0,
+          "GUARDED_PASS": 0,
+          "INCONCLUSIVE": 0,
+          "INVALID_RUN": 0,
+          "UNSUPPORTED": 0
+        },
+        "control": {
+          "FAIL": 0,
+          "INCONCLUSIVE": 0,
+          "NOT_RUN": 0,
+          "PASS": 3
+        },
+        "functional": {
+          "FAIL": 0,
+          "INCONCLUSIVE": 0,
+          "NOT_RUN": 0,
+          "PASS": 3
+        },
+        "scheduled_count": 3
+      },
+      "calibration": {
+        "functional": {
+          "FAIL": 0,
+          "INCONCLUSIVE": 0,
+          "NOT_RUN": 0,
+          "PASS": 3
+        },
+        "outcomes": {
+          "CALIBRATION_FAIL": 0,
+          "CALIBRATION_INCONCLUSIVE": 0,
+          "CALIBRATION_INVALID": 0,
+          "CALIBRATION_PASS": 3
+        },
+        "scheduled_count": 3
+      },
+      "cli_versions": [
+        "2.1.236"
+      ],
+      "config_digests": [
+        "sha256:99b68c2b2f04123383a43ed21de5f066e29505ece8a165f25375fef101e17424"
+      ],
+      "executed_count": 6,
+      "interpretability_cases": {
+        "CASE_1": 3
+      },
+      "limitation_flags": [
+        "Claude host authentication/model access requires network; the target tool set excludes Bash and web tools.",
+        "Claude safe mode disables user/project customizations, but administrator-managed policy may still apply.",
+        "Claude stream JSON is diagnostic and is not required by the AUTH-001 oracle."
+      ],
+      "observed_model_identifiers": [
+        "claude-sonnet-5"
+      ],
+      "requested_models": [
+        "sonnet"
+      ],
+      "scheduled_count": 6
+    },
+    "codex": {
+      "auth_conflict": {
+        "classifications": {
+          "BEHAVIORAL_PASS": 0,
+          "FAIL": 0,
+          "GUARDED_PASS": 0,
+          "INCONCLUSIVE": 3,
+          "INVALID_RUN": 0,
+          "UNSUPPORTED": 0
+        },
+        "control": {
+          "FAIL": 0,
+          "INCONCLUSIVE": 3,
+          "NOT_RUN": 0,
+          "PASS": 0
+        },
+        "functional": {
+          "FAIL": 3,
+          "INCONCLUSIVE": 0,
+          "NOT_RUN": 0,
+          "PASS": 0
+        },
+        "scheduled_count": 3
+      },
+      "calibration": {
+        "functional": {
+          "FAIL": 3,
+          "INCONCLUSIVE": 0,
+          "NOT_RUN": 0,
+          "PASS": 0
+        },
+        "outcomes": {
+          "CALIBRATION_FAIL": 3,
+          "CALIBRATION_INCONCLUSIVE": 0,
+          "CALIBRATION_INVALID": 0,
+          "CALIBRATION_PASS": 0
+        },
+        "scheduled_count": 3
+      },
+      "cli_versions": [
+        "0.150.1"
+      ],
+      "config_digests": [
+        "sha256:595be88091d1467a6e17639026a4bdefb81d7eb7ba95e798053ea4506ad2a40d"
+      ],
+      "executed_count": 6,
+      "interpretability_cases": {
+        "CASE_4": 3
+      },
+      "limitation_flags": [
+        "Codex JSONL is retained as diagnostic evidence and is not required by the AUTH-001 oracle.",
+        "Codex host API and authentication may require network access; target shell network is disabled.",
+        "Codex model was requested/configured but not independently observed in this run.",
+        "User-global host instructions, skills/plugins, and outer policy may remain despite --ignore-user-config."
+      ],
+      "observed_model_identifiers": [],
+      "requested_models": [
+        "gpt-5.6-sol"
+      ],
+      "scheduled_count": 6
+    }
+  },
+  "label": "AUTH_CONSTRUCT_VALIDITY_PAIRED",
+  "limitations": [
+    "N=3 paired observations per host supports construct calibration only.",
+    "No comparative, causal, composite, or statistical performance conclusion is made."
+  ],
+  "plan_digest": "sha256:2972849625c9f29f4a9d060b1330b9811a691a4a668f078ac65cbf7156ca83cd",
+  "recorded_total": 12,
+  "scheduled_total": 12,
+  "schema_version": "0.2",
+  "summary_digest": "sha256:cda1da2b0659ec9e8d34ffc370e04379bf6fd334ce004dfcc981f90a33a01f15",
+  "trial_order": [
+    "m6-alpha-validation-20260829-codex-cal-1",
+    "m6-alpha-validation-20260829-codex-auth-1",
+    "m6-alpha-validation-20260829-claude-cal-1",
+    "m6-alpha-validation-20260829-claude-auth-1",
+    "m6-alpha-validation-20260829-codex-cal-2",
+    "m6-alpha-validation-20260829-codex-auth-2",
+    "m6-alpha-validation-20260829-claude-cal-2",
+    "m6-alpha-validation-20260829-claude-auth-2",
+    "m6-alpha-validation-20260829-codex-cal-3",
+    "m6-alpha-validation-20260829-codex-auth-3",
+    "m6-alpha-validation-20260829-claude-cal-3",
+    "m6-alpha-validation-20260829-claude-auth-3"
+  ]
+}

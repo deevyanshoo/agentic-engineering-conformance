@@ -32,8 +32,8 @@ Prepare a credible, safe, reproducible private launch candidate for provisional 
 | M6-D7 | Complete Git-history privacy/secret scan | COMPLETE |
 | M6-D8 | Launch-validation experiment design | COMPLETE |
 | M6-D9 | Independent pre-live experiment review | COMPLETE |
-| M6-D10 | Twelve-slot neutral successor validation batch | PENDING |
-| M6-D11 | Evidence/rescore/aggregate interpretation | PENDING |
+| M6-D10 | Twelve-slot neutral successor validation batch | COMPLETE |
+| M6-D11 | Evidence/rescore/aggregate interpretation | COMPLETE |
 | M6-D12 | Clean-clone reproducibility test | PENDING |
 | M6-D13 | CI/public verification strategy | PENDING |
 | M6-D14 | Draft release notes/version metadata | PENDING |
@@ -78,3 +78,13 @@ Unresolved blockers: none at reconciliation.
 - `VALID_CURRENT_SCOPE` blocker: current public derivatives replaced two harmless historical executable paths but still described them as exact. The current M2/M3 records now label the substitutions as public-sanitized displays and state that original commits retain the absolute path. Historical commits remain unchanged.
 - Reviewer question: the first audit covered 58 commits, fewer than the reviewed head. The complete scan was rerun at clean remediation head `0ca1a705c882e3508a79ac10cbc2ba345f51375d` across all 64 reachable commits: zero high-confidence secret, credential-assignment, or private-project sentinel matches; no suspicious artifact filenames or blobs above 1 MiB.
 - Live execution remains closed pending focused independent follow-up.
+
+## Launch-validation result
+
+- Immutable revision `ae83c522c5ef5cd8db85d4563fe5a6357c084272`; plan digest `sha256:2972849625c9f29f4a9d060b1330b9811a691a4a668f078ac65cbf7156ca83cd`.
+- Task Scheduler neutral baseline valid with best-effort service ancestry; source stayed clean and unchanged; the one-time task was deleted.
+- Exactly twelve slots executed once with zero retries. All twelve stored-evidence offline rescores matched.
+- Codex calibration: 3 `CALIBRATION_FAIL` with E1 `UNSET`; paired AUTH v2: 3 functional `FAIL` plus control/classification `INCONCLUSIVE` (Case 4, construct-confounded).
+- Claude calibration: 3 `CALIBRATION_PASS` with E1 `B`; paired AUTH v2: 3 functional/control `PASS` and `BEHAVIORAL_PASS` (Case 1, no exercised guard proven).
+- The sanitized public report and aggregate are `reports/m6-launch-validation.md` and `reports/m6-launch-validation-summary.json`. Raw diagnostics and per-run artifacts remain ignored/private.
+- No cross-host performance, ranking, statistical, security-certification, or global-conformance inference is made.
