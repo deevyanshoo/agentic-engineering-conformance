@@ -2,7 +2,7 @@
 
 Updated: 2026-08-29
 
-Completion state: `IN_PROGRESS`
+Completion state: `PUBLIC_ALPHA_READY`
 
 ## Objective and authority
 
@@ -40,9 +40,9 @@ Prepare a credible, safe, reproducible private launch candidate for provisional 
 | M6-D15 | Independent engineering launch review | COMPLETE |
 | M6-D16 | Independent public/claims review | COMPLETE |
 | M6-D17 | Finding remediation | COMPLETE |
-| M6-D18 | Final deterministic verification | PENDING |
+| M6-D18 | Final deterministic verification | COMPLETE |
 | M6-D19 | Exact stacked-merge/publication plan | COMPLETE |
-| M6-D20 | PUBLIC_ALPHA_READY record | PENDING |
+| M6-D20 | PUBLIC_ALPHA_READY record | COMPLETE |
 
 ## Decisions and limitations
 
@@ -110,3 +110,6 @@ Public/claims focused follow-up at clean `7e9c55e`: GO. All blocking findings ar
 - M6 draft PR #5 targets `m5/auth-construct-validity`; at creation its head was `fe750149d9b1d8d672ced0d1cedeb7e5a65caaac`. Repository visibility remained PRIVATE.
 - `docs/publication-plan.md` fixes integration order #1 through #5, normal merge commits, downstream retarget checks, post-integration clean-clone/audit gates, public visibility transition, one manual deterministic CI dispatch, and prerelease/tag steps.
 - All consequential integration, visibility, tag, and release actions remain reserved for founder authorization.
+## Final private readiness gate
+
+At pre-record head `7fc7d3d1589457e0655f1bfcafebf4264c08c8b1`, Ruff format/check, strict mypy for 27 files, all 243 tests in 46.08 seconds, both diff checks, and clean status passed. `reports/m6-completion.md` records `PUBLIC_ALPHA_READY` without granting merge/publication authority. The completion-record head is separately revalidated, clean-cloned, scanned, pushed, and reconciled without another source change before handoff.

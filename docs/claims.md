@@ -12,7 +12,7 @@ This register defines the strongest claims supported by the repository. A passin
 - AUTH-001 versioning preserves historical v1 replay while v2 distinguishes stale selection from an observed no-decision state.
 - A separate no-conflict calibration can test the useful mutation without calling its outcome AUTH conformance.
 - A digest-bound worker can be launched through current-user, least-privilege Windows Task Scheduler and records best-effort ancestry, source binding, outcomes, offline rescores, and task cleanup.
-- M1-M5 development included independent read-only reviews whose findings and dispositions remain in repository reports.
+- M1-M6 development included independent read-only reviews whose findings and dispositions remain in repository reports.
 
 ## What remains experimental
 
