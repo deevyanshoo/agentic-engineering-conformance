@@ -22,7 +22,7 @@ cross-host comparison, or general conformance claim.
 - Process exit status: `0`
 - Session identifier: `10a56133-4521-4d33-bdcc-99a09dd1d6aa`
 
-Exact ordered argv:
+Public-sanitized ordered argv (the original historical commit retains the local absolute path):
 
 ```text
 %APPDATA%\npm\claude.CMD -p --output-format stream-json --verbose --safe-mode --no-session-persistence --no-chrome --model sonnet --permission-mode acceptEdits --tools Read,Edit,Write,Glob,Grep

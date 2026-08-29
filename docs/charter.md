@@ -27,31 +27,16 @@ These domains are a provisional taxonomy, not eternal or exhaustive categories.
 - deterministic reference adapter covering all classifications and offline rescoring;
 - Codex and Claude Code AUTH-001 adapters;
 - AUTH-001 v1 historical replay, v2 no-decision semantics, and no-conflict calibration; and
-+- experimental digest-bound neutral execution through current-user Windows Task Scheduler.
-+
-+Only AUTH has real-host integration evidence. Reference scenarios for the other five domains test benchmark architecture, not real-host conformance.
-+
-+## Explicit non-goals
-+
-+The alpha does not implement hosted software, a UI/dashboard, model router, custom agent runtime, workflow DSL, database, task platform, telemetry/signature standard, Git or CI replacement, editor/GitHub integration, RBAC, incident database, composite score, leaderboard, certification program, or additional real-host adapter.
-+
-+It does not require chain-of-thought, standardize the wider ecosystem, rank control mechanisms, or infer general host quality from small experiments.
-+
-+## Publication boundary
-+
-+Source publication does not convert experimental observations into certification. Public artifacts follow [the evidence policy](evidence-policy.md), claims follow [the claim register](claims.md), and release operations require a separately authorized publication gate.
-+'@
-$adr=@'
-# ADR 0002: Public alpha policy
+- experimental digest-bound neutral execution through current-user Windows Task Scheduler.
 
-Status: accepted for provisional `v0.1.0-alpha.1`. Date: 2026-08-29.
+Only AUTH has real-host integration evidence. Reference scenarios for the other five domains test benchmark architecture, not real-host conformance.
 
-1. **Single license boundary:** Apache-2.0 covers code, schemas, scenarios, synthetic fixtures, authored benchmark data, documentation, and contributions.
-2. **Public evidence minimization:** publish deterministic contracts, sanitized manifests/aggregates, methodology, and review evidence; exclude raw prose-bearing diagnostics, credentials, private reasoning, and unnecessary machine identifiers.
-3. **Historical replay:** preserve AUTH-001 v1 and M1-M5 evidence; later semantic contracts are versioned and counterfactual rescores are labeled.
-4. **No ranking:** small real-host experiments are exact-run integration/construct evidence only.
-5. **Contributor gate:** ordinary contributions require only local deterministic checks, never a paid model account.
-6. **CI honesty:** retain the deterministic workflow but claim hosted CI only after repository steps actually run; local and clean-clone evidence remains explicit.
-7. **Publication authority:** `PUBLIC_ALPHA_READY` does not authorize merges, a visibility change, a tag, or a release.
+## Explicit non-goals
 
-Consequences: public readers can reproduce the reference framework without credentials; the alpha remains candid about Windows-only neutral execution, sparse host evidence, and taxonomy uncertainty.
+The alpha does not implement hosted software, a UI/dashboard, model router, custom agent runtime, workflow DSL, database, task platform, telemetry/signature standard, Git or CI replacement, editor/GitHub integration, RBAC, incident database, composite score, leaderboard, certification program, or additional real-host adapter.
+
+It does not require chain-of-thought, standardize the wider ecosystem, rank control mechanisms, or infer general host quality from small experiments.
+
+## Publication boundary
+
+Source publication does not convert experimental observations into certification. Public artifacts follow [the evidence policy](evidence-policy.md), claims follow [the claim register](claims.md), and release operations require a separately authorized publication gate.
