@@ -133,3 +133,6 @@ or Codex-versus-Claude performance claims.
 M4's N=3-per-host scheduled batch tests the neutral worker and repeatability mechanics only; it
 still cannot support host ranking, pass-rate estimation, statistical superiority, or attribution
 of differences to process nesting.
+M5's twelve-slot paired construct-calibration batch is historical terminal evidence but not a real-host result: every slot failed during fixture preparation before a model process launched. The later M4-owned Windows path correction is preserved as a future-facing repair and does not replace that batch. AUTH v2 and calibration therefore remain experimentally unresolved until a separately identified successor plan executes.
+
+Public alpha artifacts follow `docs/evidence-policy.md`; ignored raw diagnostics and local run workspaces are not release assets.
