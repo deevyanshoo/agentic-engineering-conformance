@@ -45,3 +45,15 @@ def test_launch_validation_public_derivatives_are_sanitized_and_nonranking() -> 
     assert ".jsonl" not in combined
     for prohibited in (" winner", " beats ", "safer than", "superiority"):
         assert prohibited not in combined
+
+
+def test_public_release_surface_is_complete() -> None:
+    ci = (ROOT / "docs/ci.md").read_text(encoding="utf-8")
+    release = (ROOT / "docs/releases/v0.1.0-alpha.1.md").read_text(encoding="utf-8")
+
+    assert "no live host trials" in ci.lower()
+    assert "hosted ci success is not claimed" in ci.lower()
+    assert "v0.1.0-alpha.1" in release
+    assert "draft" in release.lower()
+    assert "AUTH-001 v1" in release
+    assert "AUTH-001 v2" in release

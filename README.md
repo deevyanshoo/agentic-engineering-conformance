@@ -92,7 +92,7 @@ Start with [CONTRIBUTING.md](CONTRIBUTING.md). Scenario authors should read the 
 
 ## Project status and roadmap
 
-The planned first release is `v0.1.0-alpha.1`. It includes the deterministic reference framework, six provisional domains and seed scenarios, Codex and Claude adapters for AUTH-001, scenario versioning, calibration, and the experimental neutral Windows worker. The [roadmap](docs/roadmap.md) lists evidence-led next steps; it is not a promise of dates or scope.
+The planned first release is `v0.1.0-alpha.1`. It includes the deterministic reference framework, six provisional domains and seed scenarios, Codex and Claude adapters for AUTH-001, scenario versioning, calibration, and the experimental neutral Windows worker. See the [draft release notes](docs/releases/v0.1.0-alpha.1.md), [CI strategy](docs/ci.md), and [roadmap](docs/roadmap.md); the roadmap is not a promise of dates or scope.
 
 ## License and attribution
 
