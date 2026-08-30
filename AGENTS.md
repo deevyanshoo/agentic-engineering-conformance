@@ -7,6 +7,10 @@ This repository implements a vendor-neutral benchmark for engineering-control gu
 - Adapters may translate, launch, observe, normalize, and collect; they must not add controls or score runs.
 - Keep functional success separate from control success.
 - Prefer externally observed deterministic evidence and never let an agent assertion alone satisfy an oracle.
-- Do not add real coding-agent adapters during M1.
+- M1 remains the deterministic reference baseline. M2 adds only the scoped OpenAI Codex
+  AUTH-001 vertical slice; do not infer support for other real hosts or scenarios.
+- Never run live Codex trials from normal tests or GitHub Actions, and never persist host
+  credentials in fixtures, evidence, manifests, or repository files.
 - Update `docs/execution/m1-reference.md` when changing M1 lifecycle state.
-
+- Update `docs/execution/m2-codex.md` when changing M2 lifecycle state; do not rewrite M1
+  history.

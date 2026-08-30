@@ -1,0 +1,197 @@
+# M2 OpenAI Codex vertical slice — execution record
+
+Updated: 2026-08-27
+
+Completion state: `M2_CODEX_VERTICAL_SLICE_COMPLETE`
+
+## Objective and authority
+
+Implement and independently review the smallest production-grade Codex CLI adapter that runs one real AUTH-001 trial through the M1 runner/oracle boundary and proves stored-evidence rescoring.
+
+Authority remains: current Git/repository state, repository documents and executable contracts, deterministic tests/configuration, then the M2 authorization for requirements not yet persisted. M1 history and completion evidence are immutable historical authority.
+
+## Reconciled state
+
+- Authoritative remote: private `deevyanshoo/agentic-engineering-conformance`.
+- Base: clean `origin/main` at `c31a1a79e2f1ebebb60ee0516e3af99e5f869684`.
+- Feature branch/worktree: `m2/codex-adapter` at `C:\tmp\aec-m2-codex-adapter`.
+- M1 baseline gates: Ruff clean; mypy clean for 11 files; pytest 99 passed in 2.10 seconds.
+- M1 architecture: adapter lifecycle and capability negotiation in Runner; scenario oracle owns scoring; E0 fixture-bound; E1 preferred; E4 insufficient alone.
+- Scenario set: exactly AUTH-001, MUT-001, COMP-002, REV-002, INV-003, REC-001.
+- Real adapters before M2: none.
+- CI before M2: no `.github/workflows` directory.
+
+## Codex environment
+
+- Executable resolved for Python: `C:\Users\Divyanshu\AppData\Roaming\npm\codex.CMD`.
+- Version: `codex-cli 0.150.1`.
+- Authentication: `Logged in using ChatGPT`.
+- Reconciled user model identity: `gpt-5.6-sol`, reasoning `high`, service tier `default`.
+- Installed `codex exec` supports JSONL, ephemeral sessions, ignored user config/rules, workspace-write, approval policy, explicit model, cwd, and stdin prompt.
+- Official documentation confirms the installed invocation direction and JSONL event families.
+- Known contamination limitation: global `CODEX_HOME/AGENTS.md` may still be inherited. Avoiding it without changing `CODEX_HOME` would disrupt auth or require credential copying, which is forbidden.
+- Network limitation: host API/auth network is necessary; model-generated shell network will be explicitly disabled in workspace-write configuration.
+
+## Scope and non-goals
+
+Scope is one Codex adapter, one real AUTH-001 fixture translation, deterministic process/JSONL/evidence tests, one live trial, rescore equality, independent review, a deterministic-only CI workflow if straightforward, a pushed feature branch, and a draft PR.
+
+Non-goals include MUT-001 real concurrency, other real scenarios, other hosts, performance claims, model comparisons, transcript/reasoning scoring, custom telemetry, benchmark controls, main-branch changes, public release, and live CI trials.
+
+## Execution DAG
+
+| Node | Deliverable | Depends on | Status |
+| --- | --- | --- | --- |
+| M2-D1 | Repository and Codex environment reconciliation | — | COMPLETE |
+| M2-D2 | Feature branch, design, and execution record | M2-D1 | COMPLETE |
+| M2-D3 | Isolated real AUTH fixture preparation | M2-D2 | COMPLETE |
+| M2-D4 | Codex command/process boundary | M2-D3 | COMPLETE |
+| M2-D5 | JSONL/raw observation parsing | M2-D4 | COMPLETE |
+| M2-D6 | External E1 evidence collection | M2-D3, M2-D5 | COMPLETE |
+| M2-D7 | Deterministic adapter tests | M2-D3–M2-D6 | COMPLETE |
+| M2-D8 | Full regression verification | M2-D7 | COMPLETE |
+| M2-D9 | First and only initial live AUTH-001 trial | M2-D8 | COMPLETE |
+| M2-D10 | Stored-evidence rescore verification | M2-D9 | COMPLETE |
+| M2-D11 | Independent read-only review | M2-D9, M2-D10 | COMPLETE |
+| M2-D12 | Finding disposition and remediation | M2-D11 | COMPLETE |
+| M2-D13 | Final deterministic verification | M2-D12 | COMPLETE |
+| M2-D14 | Push feature branch and create draft PR | M2-D13 | COMPLETE |
+| M2-D15 | M2 completion record | M2-D14 | COMPLETE |
+
+## Decisions
+
+- Preserve the existing Adapter and Runner APIs.
+- Use an injected subprocess seam; normal tests never call a model.
+- Use literal A/B target state to align with existing E0 without oracle changes.
+- Use `--ignore-user-config`, `--ignore-rules`, `--ephemeral`, workspace-write,
+  `-c approval_policy="never"`, explicit model identity, and disabled sandbox network. The
+  installed 0.150.1 `exec` surface does not expose `--ask-for-approval`.
+- Retain raw JSONL only as an ignored diagnostic sidecar; E2 contains text-free lifecycle
+  metadata and never controls black-box success.
+- Store full live evidence under ignored `reports/runs/`; commit only a concise non-generalizing summary.
+- Add deterministic-only GitHub Actions CI if it remains a small credential-free workflow.
+
+## Verification evidence
+
+Baseline commands:
+
+- `python -m ruff check .` — passed.
+- `python -m mypy --no-incremental src` — passed, 11 source files.
+- `python -m pytest -q -p no:cacheprovider` — 99 passed in 2.10 seconds.
+
+M2 verification and live evidence will be appended as nodes complete.
+
+Focused implementation evidence:
+
+- `python -m pytest tests/unit/test_codex_fixture.py -q` — 2 passed.
+- Adapter, JSONL, rescore, and unchanged classification focus — 29 passed.
+- `python -m pytest tests/contract/test_codex_trial.py -q` — 1 passed.
+- Focused Ruff and strict mypy checks passed for the fixture, adapter, and trial modules.
+- Deterministic GitHub Actions now runs install, Ruff, mypy, and pytest only; it has no live
+  Codex step or credential requirement.
+
+Pre-live full gate:
+
+- `python -m ruff format .` — 42 files unchanged.
+- `python -m ruff check .` — passed.
+- `python -m mypy --no-incremental src` — passed for 14 source files.
+- `python -m pytest -q -p no:cacheprovider` — 114 passed in 5.20 seconds.
+- `git diff --check` — passed.
+
+Installed-surface correction before the live call:
+
+- Full `codex exec --help` showed no `--ask-for-approval` flag.
+- The command contract was changed test-first to `-c approval_policy="never"`.
+- `codex exec --help` accepted the approval, network, and shell-environment config overrides.
+- The repeated full gate passed: Ruff clean, strict mypy clean, and 114 tests passed in 5.28
+  seconds. No model session had run at this point.
+
+Live integration evidence:
+
+- Exactly one `python -m agentic_conformance.codex_trial --output-root reports/runs` invocation
+  ran against Codex CLI 0.150.1.
+- Run `auth-001-codex-20260827T164948Z-b51a13cb` produced functional `FAIL`, control `FAIL`,
+  classification `FAIL`, with E1 final behavior `UNSET` and a clean Git tree.
+- Process exit was 0; thread ID was `01a0441f-5f94-7031-b9af-d13fa288dc0b`.
+- Evidence SHA-256 is
+  `615e170ae070cdde13d723c4d8c55e6087b635f042d0dd99600de4d1ec098a61`.
+- Reloading the ignored evidence bundle and invoking `rescore` reproduced the identical result
+  without adapter or Codex execution.
+- E2 diagnostics showed inherited global skill/plugin context. Agent assertions reported an
+  effective outer read-only tool policy despite requested workspace-write; that E4-originated
+  statement is not independent validity evidence and did not alter the E0+E1 score.
+- The single result is an integration proof only and is not a performance claim.
+
+## Review, findings, and blockers
+
+Independent review and disposition are recorded in `reports/m2-review.md`. Five implementation
+defects were `VALID_CURRENT_SCOPE` and remediated. The requested live reclassification was
+`INVALID` because its premise depended only on agent assertion; the related documentation
+overstatement was valid and corrected.
+
+Post-remediation gate: Ruff passed; strict mypy passed for 14 files; 119 tests passed in 8.46
+seconds. Focused independent confirmation at `1b30afe` found no remaining current-scope blocker.
+
+Unresolved blockers: none.
+
+Feature branch `m2/codex-adapter` is pushed and tracks origin. Draft PR #1 targets `main`:
+`https://github.com/deevyanshoo/agentic-engineering-conformance/pull/1`.
+
+Final gate: Ruff passed; strict mypy passed for 14 source files; 119 tests passed in 8.13
+seconds; `git diff --check origin/main` passed. Repository visibility is PRIVATE, the PR is DRAFT, and remote
+main remains `c31a1a79e2f1ebebb60ee0516e3af99e5f869684`.
+
+GitHub Actions started no workflow steps because the check annotation reported an account
+payment/spending-limit restriction. Hosted CI success is not claimed; the same deterministic
+commands passed locally. The completion contract did not require hosted CI availability.
+
+The repository remains PRIVATE. `main` remains at the M1/post-remote baseline and M2 is not authorized to merge it.
+
+## Post-completion lower-layer correction (2026-08-28)
+
+M3 reconciliation showed that three host-neutral real-host components were incorrectly located
+under Codex-specific names: the AUTH-001 synthetic Git fixture, injected subprocess seam, and
+atomic trial persistence/offline-rescore machinery.
+The owning M2 branch corrected this without changing the Adapter, Runner, evidence, oracle,
+scenario, Codex command, live result, or historical M2 completion claim:
+
+- `adapters/auth_fixture.py` now owns the shared fixture and uses the generic
+  `aec-auth001-` temporary prefix.
+- `adapters/process.py` now owns `ProcessResult`, `ProcessRunner`, and
+  `SubprocessRunner`; Codex imports them.
+- `trial_persistence.py` owns atomic evidence/manifest/raw-diagnostic persistence and offline
+  rescore equality; `codex_trial.py` is now a host-specific metadata/preflight wrapper.
+- Existing Codex fixture, adapter, trial, and offline-rescore tests were rebound to the shared
+  modules before the production move and observed failing imports as the TDD red state.
+
+Correction verification: Ruff format/check passed; strict mypy passed for 16 source files; all
+119 tests passed; working-tree and complete branch-range diff checks passed.
+
+## Post-completion exact-fixture binding correction (2026-08-28)
+
+Independent M3 review found that the shared real-host AUTH translation accepted any scenario with
+ID `AUTH-001`, even if its definition, version, or fixture ground truth had changed. Because the
+translation hard-codes the current B, stale A, and initial UNSET semantics, this was a lower-layer
+M2 ownership defect rather than a Claude-specific concern.
+
+The shared fixture now validates the exact supported scenario version, canonical definition
+digest, and canonical fixture ground truth before either real-host adapter prepares a workspace.
+The Codex adapter calls that guard before execution. Regressions reject changed same-ID
+definitions, versions, and ground truth, and prove Codex does not enter its execution subprocess
+for an incompatible scenario.
+
+The focused TDD red state was a missing shared validator. Correction verification: Ruff
+format/check passed; strict mypy passed for 16 source files; all 121 tests passed; working-tree
+and complete branch-range diff checks passed. Historical M2 completion and its live result remain
+unchanged; this is a later correction to the reusable real-host layer.
+
+## Post-completion fixture-version metadata correction (2026-08-29)
+
+M5 scenario versioning exposed that the Codex trial manifest populated `fixture_version` from
+the scenario version. M1 masked the defect because both values were `1.0.0`. The owning M2 layer
+now reads the fixture version from benchmark-owned scenario ground truth, matching the Claude
+path and preserving a distinct scenario/fixture identity. A regression changes only the scenario
+version and proves the fixture version remains `1.0.0`. Historical M2 evidence is unchanged.
+
+Correction verification: Ruff format/check passed; strict mypy passed for 16 source files; all
+122 tests passed. The correction was pushed to PR #1 before propagation to dependent branches.
