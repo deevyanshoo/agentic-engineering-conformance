@@ -18,3 +18,8 @@ This repository implements a vendor-neutral benchmark for engineering-control gu
   history.
 - Update `docs/execution/m3-claude.md` when changing M3 lifecycle state; keep M3 stacked on
   M2 until PR #1 is merged or explicitly retargeted.
+- M4 live trials may run only from the committed neutral worker launched by the approved
+  current-user Windows Task Scheduler boundary. Normal tests, the outer implementation process,
+  and GitHub Actions must never invoke them.
+- Update `docs/execution/m4-neutral-experiments.md` for M4 state. Keep M4 stacked on M3, preserve
+  historical M2/M3 trial records, persist no credentials, and make no host ranking from N=3.

@@ -75,6 +75,23 @@ def _write_behavior(value: str) -> Callable[[Path], None]:
     return mutate
 
 
+def test_contradictory_successful_auth_status_is_rejected(tmp_path: Path) -> None:
+    runner = QueuedRunner(
+        [
+            _result(stdout="codex-cli 0.150.1\n"),
+            _result(stdout="Not logged in using ChatGPT; using API key\n"),
+        ]
+    )
+    adapter = CodexAdapter(
+        process_runner=runner,
+        executable_resolver=lambda _: "C:/tools/codex.CMD",
+        workspace_parent=tmp_path,
+    )
+
+    with pytest.raises(RuntimeError, match="unrecognized authentication mode"):
+        adapter.probe()
+
+
 def test_missing_executable_and_failed_login_are_unsupported(tmp_path: Path) -> None:
     missing_runner = QueuedRunner([])
     missing = CodexAdapter(
@@ -212,6 +229,8 @@ def test_exact_command_evidence_and_behavioral_scoring(tmp_path: Path) -> None:
     assert "--ask-for-approval" not in command
     assert cwd is not None and not cwd.exists()
     assert adapter.last_observation is not None
+    assert adapter.probed_cli_version == "0.150.1"
+    assert adapter.probed_auth_mode == "chatgpt"
     assert adapter.last_observation.thread_id == "thread-1"
     assert not any(hasattr(adapter, name) for name in ("score", "classify", "pass_fail"))
 

@@ -6,6 +6,7 @@ import json
 import platform
 import sys
 import uuid
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -33,7 +34,13 @@ class TrialArtifacts:
     rescored: RunResult
 
 
-def run_auth_trial(output_root: Path, adapter: ClaudeAdapter) -> TrialArtifacts:
+def run_auth_trial(
+    output_root: Path,
+    adapter: ClaudeAdapter,
+    *,
+    run_id: str | None = None,
+    additional_diagnostics: (Mapping[str, str] | Callable[[], Mapping[str, str]] | None) = None,
+) -> TrialArtifacts:
     scenario = load_scenario(
         ROOT / "scenarios/authority/AUTH-001/scenario.json",
         ROOT / "schemas/scenario.schema.json",
@@ -51,13 +58,13 @@ def run_auth_trial(output_root: Path, adapter: ClaudeAdapter) -> TrialArtifacts:
     if not isinstance(fixture_version, str):
         raise RuntimeError("AUTH-001 fixture version is unavailable")
 
-    run_id = f"auth-001-claude-{_compact_now()}-{uuid.uuid4().hex[:8]}"
+    actual_run_id = run_id or f"auth-001-claude-{_compact_now()}-{uuid.uuid4().hex[:8]}"
     description = observation.description
     metadata = ManifestMetadata(
-        run_id=run_id,
+        run_id=actual_run_id,
         stack_name="Anthropic Claude Code",
         stack_version=description.cli_version,
-        stack_config_digest=_config_digest(description),
+        stack_config_digest=claude_config_digest(description),
         model_identifier=observation.observed_model or description.requested_model,
         fixture_version=fixture_version,
         initial_git_sha=observation.initial_head,
@@ -73,7 +80,7 @@ def run_auth_trial(output_root: Path, adapter: ClaudeAdapter) -> TrialArtifacts:
     )
     persisted = persist_trial(
         output_root=output_root,
-        run_id=run_id,
+        run_id=actual_run_id,
         record=record,
         scenario=scenario,
         adapter=adapter,
@@ -81,6 +88,9 @@ def run_auth_trial(output_root: Path, adapter: ClaudeAdapter) -> TrialArtifacts:
         oracles=oracles,
         raw_diagnostic_name="claude.jsonl",
         raw_diagnostic=observation.process.stdout,
+        additional_diagnostics=(
+            additional_diagnostics() if callable(additional_diagnostics) else additional_diagnostics
+        ),
     )
     return TrialArtifacts(
         run_id=persisted.run_id,
@@ -120,7 +130,7 @@ def _print_preflight(description: ClaudeRunDescription) -> None:
     print("CLAUDE_LIVE_PREFLIGHT=" + json.dumps(value, sort_keys=True), flush=True)
 
 
-def _config_digest(description: ClaudeRunDescription) -> str:
+def claude_config_digest(description: ClaudeRunDescription) -> str:
     value = {
         "requested_model": description.requested_model,
         "output_format": description.output_format,

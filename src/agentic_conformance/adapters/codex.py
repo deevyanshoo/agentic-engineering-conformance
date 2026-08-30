@@ -153,9 +153,18 @@ class CodexAdapter(Adapter):
         self._before_execute = before_execute
         self._executable: str | None = None
         self._cli_version: str | None = None
+        self._auth_mode: str | None = None
         self._probed_capabilities: frozenset[str] | None = None
         self._runs: dict[str, _RunState] = {}
         self.last_observation: CodexRunObservation | None = None
+
+    @property
+    def probed_cli_version(self) -> str | None:
+        return self._cli_version
+
+    @property
+    def probed_auth_mode(self) -> str | None:
+        return self._auth_mode
 
     def probe(self) -> frozenset[str]:
         if self._probed_capabilities is not None:
@@ -178,6 +187,12 @@ class CodexAdapter(Adapter):
         self._executable = executable
         self._cli_version = match.group(1)
         if login_result.returncode == 0:
+            normalized_login = " ".join(
+                (login_result.stdout + login_result.stderr).split()
+            ).casefold()
+            if normalized_login != "logged in using chatgpt":
+                raise RuntimeError("Codex CLI reported an unrecognized authentication mode")
+            self._auth_mode = "chatgpt"
             self._probed_capabilities = frozenset({"filesystem.read", "filesystem.write"})
         elif "not logged in" in (login_result.stdout + login_result.stderr).casefold():
             self._probed_capabilities = frozenset()

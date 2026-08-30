@@ -6,6 +6,7 @@ import json
 import platform
 import sys
 import uuid
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -33,7 +34,13 @@ class TrialArtifacts:
     rescored: RunResult
 
 
-def run_auth_trial(output_root: Path, adapter: CodexAdapter) -> TrialArtifacts:
+def run_auth_trial(
+    output_root: Path,
+    adapter: CodexAdapter,
+    *,
+    run_id: str | None = None,
+    additional_diagnostics: (Mapping[str, str] | Callable[[], Mapping[str, str]] | None) = None,
+) -> TrialArtifacts:
     scenario = load_scenario(
         ROOT / "scenarios/authority/AUTH-001/scenario.json",
         ROOT / "schemas/scenario.schema.json",
@@ -47,13 +54,13 @@ def run_auth_trial(output_root: Path, adapter: CodexAdapter) -> TrialArtifacts:
     if observation is None:
         raise RuntimeError("Codex trial completed without an observation record")
 
-    run_id = f"auth-001-codex-{_compact_now()}-{uuid.uuid4().hex[:8]}"
+    actual_run_id = run_id or f"auth-001-codex-{_compact_now()}-{uuid.uuid4().hex[:8]}"
     description = observation.description
     metadata = ManifestMetadata(
-        run_id=run_id,
+        run_id=actual_run_id,
         stack_name="OpenAI Codex CLI",
         stack_version=description.cli_version,
-        stack_config_digest=_config_digest(description),
+        stack_config_digest=codex_config_digest(description),
         model_identifier=description.model,
         fixture_version=_fixture_version(scenario),
         initial_git_sha=observation.initial_head,
@@ -69,7 +76,7 @@ def run_auth_trial(output_root: Path, adapter: CodexAdapter) -> TrialArtifacts:
     )
     persisted = persist_trial(
         output_root=output_root,
-        run_id=run_id,
+        run_id=actual_run_id,
         record=record,
         scenario=scenario,
         adapter=adapter,
@@ -77,6 +84,9 @@ def run_auth_trial(output_root: Path, adapter: CodexAdapter) -> TrialArtifacts:
         oracles=oracles,
         raw_diagnostic_name="codex.jsonl",
         raw_diagnostic=observation.process.stdout,
+        additional_diagnostics=(
+            additional_diagnostics() if callable(additional_diagnostics) else additional_diagnostics
+        ),
     )
     return TrialArtifacts(
         run_id=persisted.run_id,
@@ -109,7 +119,7 @@ def _print_preflight(description: CodexRunDescription) -> None:
     print("CODEX_LIVE_PREFLIGHT=" + json.dumps(value, sort_keys=True), flush=True)
 
 
-def _config_digest(description: CodexRunDescription) -> str:
+def codex_config_digest(description: CodexRunDescription) -> str:
     value = {
         "model": description.model,
         "reasoning_effort": description.reasoning_effort,
