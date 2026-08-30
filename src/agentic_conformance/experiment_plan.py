@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import hashlib
 import json
+import ntpath
+import posixpath
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import datetime
 from enum import StrEnum
-from pathlib import Path
+from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
 from typing import Any, cast
 
 from jsonschema import Draft202012Validator
@@ -18,6 +20,28 @@ PLAN_SCHEMA = ROOT / "schemas/experiment-plan.schema.json"
 _DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
 _REVISION = re.compile(r"[0-9a-f]{40}")
 _SAFE_ID = re.compile(r"[a-z0-9][a-z0-9-]{0,95}")
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class _PersistedPath:
+    raw: str
+    identity: PurePath
+
+    def __fspath__(self) -> str:
+        return self.raw
+
+    def __str__(self) -> str:
+        return self.raw
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, _PersistedPath):
+            return self.raw == other.raw
+        if isinstance(other, PurePath):
+            return self.raw == str(other)
+        return False
+
+    def __hash__(self) -> int:
+        return hash(self.identity)
 
 
 @dataclass(frozen=True, slots=True)
@@ -171,11 +195,13 @@ class ExperimentPlan:
             raise ValueError("experiment label does not match its schema version")
         if not _REVISION.fullmatch(self.benchmark_revision):
             raise ValueError("benchmark revision must be a full lowercase Git SHA")
-        if not self.source_root.is_absolute() or not self.output_root.is_absolute():
-            raise ValueError("source and output paths must be absolute")
-        source = self.source_root.resolve()
-        output = self.output_root.resolve()
-        if not output.is_relative_to(source):
+        stored_source, source_identity = _validated_persisted_path(self.source_root)
+        stored_output, output_identity = _validated_persisted_path(self.output_root)
+        normalized_source = _normalized_persisted_path(source_identity)
+        normalized_output = _normalized_persisted_path(output_identity)
+        if not _same_path_flavour(
+            source_identity, output_identity
+        ) or not normalized_output.is_relative_to(normalized_source):
             raise ValueError("experiment output must be contained by the source root")
         if self.scenario_id != "AUTH-001":
             raise ValueError("neutral experiments support only AUTH-001")
@@ -200,7 +226,12 @@ class ExperimentPlan:
         expected_digest = _mapping_digest(self.to_mapping())
         if self.plan_digest and self.plan_digest != expected_digest:
             raise ValueError("experiment plan digest mismatch")
-        bound = replace(self, source_root=source, output_root=output, plan_digest=expected_digest)
+        bound = replace(
+            self,
+            source_root=cast(Path, stored_source),
+            output_root=cast(Path, stored_output),
+            plan_digest=expected_digest,
+        )
         _validate_schema(bound.to_mapping())
         return bound
 
@@ -210,7 +241,7 @@ class ExperimentPlan:
         for host in self.hosts:
             if not host.adapter_version or not host.cli_version or not host.requested_model:
                 raise ValueError("host identity fields are required")
-            if not Path(host.executable).is_absolute():
+            if _portable_absolute_path(host.executable) is None:
                 raise ValueError("host executable paths must be absolute")
             if not _DIGEST.fullmatch(host.config_digest):
                 raise ValueError("host config digest is malformed")
@@ -306,8 +337,8 @@ class ExperimentPlan:
             batch_id=_required_string(value, "batch_id"),
             label=_required_string(value, "label"),
             benchmark_revision=_required_string(value, "benchmark_revision"),
-            source_root=Path(_required_string(value, "source_root")),
-            output_root=Path(_required_string(value, "output_root")),
+            source_root=cast(Path, _required_absolute_path(value, "source_root")),
+            output_root=cast(Path, _required_absolute_path(value, "output_root")),
             scenario_id=_required_string(scenario, "id"),
             scenario_version=_required_string(scenario, "version"),
             scenario_digest=_required_string(scenario, "digest"),
@@ -437,7 +468,7 @@ def build_paired_auth_plan(
 
 
 def write_plan(path: Path, plan: ExperimentPlan) -> None:
-    bound = plan.validated()
+    bound = bind_plan_to_local_runtime(plan)
     target = path.resolve()
     if target != bound.output_root / "experiment-plan.json":
         raise ValueError("experiment plan must be written at its bound output root")
@@ -459,6 +490,83 @@ def load_plan(path: Path) -> ExperimentPlan:
     if not isinstance(raw, dict):
         raise ValueError("experiment plan must be an object")
     return ExperimentPlan.from_mapping(cast(Mapping[str, object], raw))
+
+
+def bind_plan_to_local_runtime(
+    plan: ExperimentPlan, *, require_local_executables: bool = False
+) -> ExperimentPlan:
+    """Bind portable persisted path identities to this machine before local I/O."""
+    validated = plan.validated()
+    _, source_identity = _validated_persisted_path(validated.source_root)
+    _, output_identity = _validated_persisted_path(validated.output_root)
+    host_identities = tuple(_portable_absolute_path(host.executable) for host in validated.hosts)
+    if not _is_runtime_path(source_identity) or not _is_runtime_path(output_identity):
+        raise ValueError("experiment paths are incompatible with the current runtime")
+    if require_local_executables and any(
+        identity is None or not _is_runtime_path(identity) for identity in host_identities
+    ):
+        raise ValueError("host executable path is incompatible with the current runtime")
+    source = Path(validated.source_root)
+    output = Path(validated.output_root)
+    if not source.is_absolute() or not output.is_absolute():
+        raise ValueError("experiment paths are incompatible with the current runtime")
+    source = source.resolve()
+    output = output.resolve()
+    if not output.is_relative_to(source):
+        raise ValueError("experiment output must be contained by the source root")
+    return replace(validated, source_root=source, output_root=output)
+
+
+def _validated_persisted_path(
+    value: Path,
+) -> tuple[Path | _PersistedPath, PurePath]:
+    if isinstance(value, Path):
+        if not value.is_absolute():
+            raise ValueError("source and output paths must be absolute")
+        return value, value
+    if isinstance(value, _PersistedPath):
+        return value, value.identity
+    raw = str(value)
+    parsed = _portable_absolute_path(raw)
+    if parsed is None:
+        raise ValueError("source and output paths must be absolute")
+    preserved = _PersistedPath(raw, parsed)
+    return preserved, parsed
+
+
+def _normalized_persisted_path(value: PurePath) -> PurePath:
+    if isinstance(value, PureWindowsPath):
+        return PureWindowsPath(ntpath.normpath(str(value)))
+    return PurePosixPath(posixpath.normpath(str(value)))
+
+
+def _portable_absolute_path(value: str) -> PurePath | None:
+    if not value or "\x00" in value:
+        return None
+    windows = PureWindowsPath(value)
+    if windows.is_absolute():
+        return windows
+    posix = PurePosixPath(value)
+    if posix.is_absolute():
+        return posix
+    return None
+
+
+def _same_path_flavour(left: PurePath, right: PurePath) -> bool:
+    return isinstance(left, PureWindowsPath) is isinstance(right, PureWindowsPath)
+
+
+def _is_runtime_path(identity: PurePath) -> bool:
+    runtime_is_windows = isinstance(PurePath(), PureWindowsPath)
+    return isinstance(identity, PureWindowsPath) is runtime_is_windows
+
+
+def _required_absolute_path(value: Mapping[str, object], key: str) -> Path | _PersistedPath:
+    raw = _required_string(value, key)
+    identity = _portable_absolute_path(raw)
+    if identity is None:
+        raise ValueError("source and output paths must be absolute")
+    return _PersistedPath(raw, identity)
 
 
 def _optional_string(value: Mapping[str, object], key: str) -> str | None:
