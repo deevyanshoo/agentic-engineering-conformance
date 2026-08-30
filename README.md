@@ -6,6 +6,8 @@ Coding benchmarks usually ask whether an agent can solve a software task. This p
 
 This repository is research-stage alpha software. It is not a certification program, security boundary, model leaderboard, or claim that its provisional taxonomy is complete.
 
+Current public research alpha: [`v0.1.0-alpha.1`](https://github.com/deevyanshoo/agentic-engineering-conformance/releases/tag/v0.1.0-alpha.1). Public hosted deterministic CI is green at the tagged release commit.
+
 ## What is under test?
 
 A declared stack can include the model, coding-agent host, repository instructions, workflow, hooks and skills, tool/sandbox policy, Git strategy, CI and review configuration, and publication policy. The benchmark remains separate from that stack: adapters launch and observe, while scenario-owned deterministic oracles score external evidence.
@@ -90,9 +92,11 @@ Codex and Claude Code adapters require separately installed CLIs and existing su
 
 Start with [CONTRIBUTING.md](CONTRIBUTING.md). Scenario authors should read the [scenario guide](docs/contributing-scenarios.md); adapter authors should read the [adapter guide](docs/contributing-adapters.md). Security-sensitive reports belong through the private path in [SECURITY.md](SECURITY.md), not a public issue.
 
+If you want to challenge the benchmark rather than extend it, start with [Break AEC: adversarial review of the benchmark semantics and evidence model](https://github.com/deevyanshoo/agentic-engineering-conformance/issues/11). Confirmed counterexamples should become versioned fixes and permanent regressions.
+
 ## Project status and roadmap
 
-The planned first release is `v0.1.0-alpha.1`. It includes the deterministic reference framework, six provisional domains and seed scenarios, Codex and Claude adapters for AUTH-001, scenario versioning, calibration, and the experimental neutral Windows worker. See the [draft release notes](docs/releases/v0.1.0-alpha.1.md), [CI strategy](docs/ci.md), and [roadmap](docs/roadmap.md); the roadmap is not a promise of dates or scope.
+The current public research alpha is `v0.1.0-alpha.1`. It includes the deterministic reference framework, six provisional domains and seed scenarios, Codex and Claude adapters for AUTH-001, scenario versioning, calibration, and the experimental neutral Windows worker. See the [alpha release notes](docs/releases/v0.1.0-alpha.1.md), [CI strategy](docs/ci.md), and [roadmap](docs/roadmap.md); the roadmap is evidence-led and does not promise dates or scope.
 
 ## License and attribution
 
