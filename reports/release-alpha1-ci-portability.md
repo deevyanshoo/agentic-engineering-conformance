@@ -1,6 +1,6 @@
 # Release alpha.1 CI portability correction
 
-Status: local implementation and independent review complete; hosted CI pending
+Status: `v0.1.0-alpha.1` public research alpha launched
 
 ## Authority and scope
 
@@ -31,9 +31,9 @@ Status: local implementation and independent review complete; hosted CI pending
 | R5 Minimal lower-layer correction | complete | Portable lexical validation plus explicit local runtime binding |
 | R6 Local deterministic verification | complete | Ruff, strict mypy, 268 tests on Windows/Linux Python 3.11, demo/rescore, diff check |
 | R7 Independent read-only review | complete | Final exact-head `READY` at `07ebcf6`; no remaining findings |
-| R8 Public hotfix PR and hosted CI | in progress | PR #6 implementation head green; final record-only head pending CI |
-| R9 Normal merge and post-merge gates | pending | Clean clone plus push-triggered main CI |
-| R10 Tag, prerelease, publication record | pending | Tag remains pinned to verified release SHA |
+| R8 Public hotfix PR and hosted CI | complete | PR #6 final head green; normal merge `c74991e` |
+| R9 Normal merge and post-merge gates | complete | Fresh clone 268 tests; main CI `33328584711` green |
+| R10 Tag, prerelease, publication record | complete | Annotated tag targets `c74991e`; GitHub prerelease published |
 
 ## Root cause and correction
 
@@ -89,3 +89,16 @@ No historical raw experiment plan is tracked in the public tree. The new fixed r
 - Deterministic reference: `AUTH-001@1.0.0`, `GUARDED_PASS`, functional/control `PASS`/`PASS`, `offline_rescore_equal: true`; temporary synthetic evidence removed.
 - `git diff --check`: passed.
 - Scenarios, oracles, adapters, result classifications, schemas, plan serialization keys, and digest input mapping are unchanged.
+
+## Publication state
+
+- Original failed public CI: manual run `33321316261`, job `99283672234`; 48 failed and 195 passed tests. Classification: repository-owned cross-platform deterministic-test failure caused by interpreting persisted Windows executable paths with the reader OS path flavour.
+- Hotfix: branch `release/alpha1-ci-portability`, PR #6, final head `413214cbe1b54d97267a2238b7b416c351d977e2`; normal merge commit `c74991eeda70d74929603d7b3d9078f458209b46`.
+- Green PR CI: implementation run `33328458028` / job `99302656136`; final record-head run `33328530821` / job `99302842014`. Both executed every repository step successfully.
+- Green public `main` CI: run `33328584711`, job `99302984914`, exact release commit `c74991eeda70d74929603d7b3d9078f458209b46`; status `PUBLIC_CI_GREEN`.
+- Post-merge fresh clone: documented editable install, Ruff format/lint, strict mypy, 268 deterministic tests, reference execution with identical offline rescore, clean current-tree scan, and 90-commit history scan passed.
+- Repository: PUBLIC at <https://github.com/deevyanshoo/agentic-engineering-conformance>.
+- Annotated tag: `v0.1.0-alpha.1`; tag object `94d861e0891d31801cf122abd045220598c2a571`; target `c74991eeda70d74929603d7b3d9078f458209b46`.
+- GitHub prerelease: <https://github.com/deevyanshoo/agentic-engineering-conformance/releases/tag/v0.1.0-alpha.1>, published `2026-08-30T18:42:27Z`.
+- Residual limitations: the taxonomy and real-host AUTH construct validity remain experimental; real adapters cover AUTH-001 only; neutral scheduling is Windows-specific and not sterile; the small samples support no ranking or statistical conclusion; this release is not security certification or a production guarantee.
+- No PyPI or other package-registry publication occurred.
