@@ -1,6 +1,6 @@
 # Release alpha.1 CI portability correction
 
-Status: independent-review remediation verified locally; re-review and hosted CI pending
+Status: local implementation and independent review complete; hosted CI pending
 
 ## Authority and scope
 
@@ -30,7 +30,7 @@ Status: independent-review remediation verified locally; re-review and hosted CI
 | R4 Failing portability tests | complete | Three expected failures observed before implementation; traversal test separately observed two expected failures |
 | R5 Minimal lower-layer correction | complete | Portable lexical validation plus explicit local runtime binding |
 | R6 Local deterministic verification | complete | Ruff, strict mypy, 263 tests, Windows/Linux portability, demo/rescore, diff check |
-| R7 Independent read-only review | in progress | Initial and focused re-review findings remediated; final exact-commit re-review pending |
+| R7 Independent read-only review | complete | Final exact-commit verdict `READY`; no remaining current-scope findings |
 | R8 Public hotfix PR and hosted CI | pending | CI must execute repository steps and pass |
 | R9 Normal merge and post-merge gates | pending | Clean clone plus push-triggered main CI |
 | R10 Tag, prerelease, publication record | pending | Tag remains pinned to verified release SHA |
@@ -52,6 +52,8 @@ Focused re-review verdict at `bc7012e6c543d3b5ef48ee1488202568449f92ed`: `NOT RE
 - `VALID_CURRENT_SCOPE` medium: exact concrete-class comparison rejected mixed canonical/noncanonical paths of the same flavour. Resolved by comparing Windows-versus-POSIX flavour, with both-flavour regressions.
 - `VALID_CURRENT_SCOPE` medium: validation resolved a digest-bound persisted root containing a lexical parent segment, so the returned mapping no longer matched its digest. Resolved by retaining the exact persisted spelling through every validation/revalidation; local resolution occurs only in runtime binding.
 - `VALID_CURRENT_SCOPE` medium: source/output resolution preceded executable-flavour rejection. Resolved by parsing and checking all source, output, and executable identities before any native `Path.resolve()` call; an ordering regression makes resolution fail if reached early.
+
+Final exact-commit review verdict at `dad9a63ec75e5b43581bdcbf0ff6961816b3a3c7`: `READY`, with no remaining `VALID_CURRENT_SCOPE` findings. The reviewer independently reproduced stable mapping/digest behavior, exercised Windows/POSIX/UNC and malformed-path edges, confirmed existing plan equality contracts, and verified that all runtime flavours are rejected before native resolution or I/O.
 
 No schema, scenario, oracle, result, adapter-control, canonical serialization, digest input, or historical evidence change was required.
 
