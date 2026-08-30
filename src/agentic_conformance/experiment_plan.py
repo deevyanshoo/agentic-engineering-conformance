@@ -23,6 +23,18 @@ _SAFE_ID = re.compile(r"[a-z0-9][a-z0-9-]{0,95}")
 
 
 @dataclass(frozen=True, slots=True)
+class _PersistedPath:
+    raw: str
+    identity: PurePath
+
+    def __fspath__(self) -> str:
+        return self.raw
+
+    def __str__(self) -> str:
+        return self.raw
+
+
+@dataclass(frozen=True, slots=True)
 class HostBinding:
     name: str
     adapter_version: str
@@ -173,13 +185,13 @@ class ExperimentPlan:
             raise ValueError("experiment label does not match its schema version")
         if not _REVISION.fullmatch(self.benchmark_revision):
             raise ValueError("benchmark revision must be a full lowercase Git SHA")
-        source = _validated_persisted_path(self.source_root)
-        output = _validated_persisted_path(self.output_root)
-        normalized_source = _normalized_persisted_path(source)
-        normalized_output = _normalized_persisted_path(output)
-        if type(source) is not type(output) or not normalized_output.is_relative_to(
-            normalized_source
-        ):
+        stored_source, source_identity = _validated_persisted_path(self.source_root)
+        stored_output, output_identity = _validated_persisted_path(self.output_root)
+        normalized_source = _normalized_persisted_path(source_identity)
+        normalized_output = _normalized_persisted_path(output_identity)
+        if type(source_identity) is not type(
+            output_identity
+        ) or not normalized_output.is_relative_to(normalized_source):
             raise ValueError("experiment output must be contained by the source root")
         if self.scenario_id != "AUTH-001":
             raise ValueError("neutral experiments support only AUTH-001")
@@ -206,8 +218,8 @@ class ExperimentPlan:
             raise ValueError("experiment plan digest mismatch")
         bound = replace(
             self,
-            source_root=cast(Path, source),
-            output_root=cast(Path, output),
+            source_root=cast(Path, stored_source),
+            output_root=cast(Path, stored_output),
             plan_digest=expected_digest,
         )
         _validate_schema(bound.to_mapping())
@@ -473,6 +485,10 @@ def load_plan(path: Path) -> ExperimentPlan:
 def bind_plan_to_local_runtime(plan: ExperimentPlan) -> ExperimentPlan:
     """Bind portable persisted path identities to this machine before local I/O."""
     validated = plan.validated()
+    _, source_identity = _validated_persisted_path(validated.source_root)
+    _, output_identity = _validated_persisted_path(validated.output_root)
+    if not _is_runtime_path(source_identity) or not _is_runtime_path(output_identity):
+        raise ValueError("experiment paths are incompatible with the current runtime")
     source = Path(validated.source_root)
     output = Path(validated.output_root)
     if not source.is_absolute() or not output.is_absolute():
@@ -482,20 +498,28 @@ def bind_plan_to_local_runtime(plan: ExperimentPlan) -> ExperimentPlan:
     if not output.is_relative_to(source):
         raise ValueError("experiment output must be contained by the source root")
     for host in validated.hosts:
-        if not Path(host.executable).is_absolute():
+        identity = _portable_absolute_path(host.executable)
+        if identity is None or not _is_runtime_path(identity):
             raise ValueError("host executable path is incompatible with the current runtime")
     return replace(validated, source_root=source, output_root=output)
 
 
-def _validated_persisted_path(value: Path) -> PurePath:
+def _validated_persisted_path(
+    value: Path,
+) -> tuple[Path | _PersistedPath, PurePath]:
     if isinstance(value, Path):
         if not value.is_absolute():
             raise ValueError("source and output paths must be absolute")
-        return value.resolve()
-    parsed = _portable_absolute_path(str(value))
+        resolved = value.resolve()
+        return resolved, resolved
+    if isinstance(value, _PersistedPath):
+        return value, value.identity
+    raw = str(value)
+    parsed = _portable_absolute_path(raw)
     if parsed is None:
         raise ValueError("source and output paths must be absolute")
-    return parsed
+    preserved = _PersistedPath(raw, parsed)
+    return preserved, parsed
 
 
 def _normalized_persisted_path(value: PurePath) -> PurePath:
@@ -516,11 +540,20 @@ def _portable_absolute_path(value: str) -> PurePath | None:
     return None
 
 
-def _required_absolute_path(value: Mapping[str, object], key: str) -> PurePath:
-    parsed = _portable_absolute_path(_required_string(value, key))
-    if parsed is None:
+def _is_runtime_path(identity: PurePath) -> bool:
+    runtime_is_windows = isinstance(PurePath(), PureWindowsPath)
+    return isinstance(identity, PureWindowsPath) is runtime_is_windows
+
+
+def _required_absolute_path(value: Mapping[str, object], key: str) -> Path | _PersistedPath:
+    raw = _required_string(value, key)
+    identity = _portable_absolute_path(raw)
+    if identity is None:
         raise ValueError("source and output paths must be absolute")
-    return parsed
+    native = Path(raw)
+    if _is_runtime_path(identity) and native.is_absolute() and str(native) == raw:
+        return native
+    return _PersistedPath(raw, identity)
 
 
 def _optional_string(value: Mapping[str, object], key: str) -> str | None:

@@ -12,6 +12,10 @@ import pytest
 from agentic_conformance.experiment_plan import load_plan
 from agentic_conformance.experiment_worker import run_experiment
 
+WINDOWS_REPRESENTATIVE_DIGEST = (
+    "sha256:6977468641764e4629814d037d41ebf92f1ebec597ef384c21919015738b16ab"
+)
+
 
 def _digest(value: Mapping[str, object]) -> str:
     payload = {key: item for key, item in value.items() if key != "plan_digest"}
@@ -120,6 +124,31 @@ def test_plan_replays_foreign_absolute_paths_without_digest_change(
 
     assert loaded.to_mapping() == value
     assert loaded.plan_digest == value["plan_digest"]
+    if origin == "windows":
+        assert loaded.plan_digest == WINDOWS_REPRESENTATIVE_DIGEST
+
+
+@pytest.mark.parametrize(
+    ("origin", "source_root", "output_root"),
+    [
+        ("windows", "C:/aec", "C:/aec/reports//runs/./portable-plan"),
+        ("posix", "/srv//aec", "/srv//aec/./reports/runs/portable-plan"),
+    ],
+)
+def test_plan_preserves_noncanonical_absolute_spelling_and_digest(
+    tmp_path: Path, origin: str, source_root: str, output_root: str
+) -> None:
+    value = _plan_mapping(origin)
+    value["source_root"] = source_root
+    value["output_root"] = output_root
+    value["plan_digest"] = _digest(value)
+    path = tmp_path / f"spelling-{origin}.json"
+    _write_plan(path, value)
+
+    loaded = load_plan(path)
+
+    assert loaded.to_mapping() == value
+    assert loaded.plan_digest == value["plan_digest"]
 
 
 @pytest.mark.parametrize(
@@ -165,6 +194,28 @@ def test_plan_normalizes_parent_segments_before_containment_check(
 
     with pytest.raises(ValueError, match="contained"):
         load_plan(path)
+
+
+def test_worker_rejects_foreign_or_ambiguous_executable_before_local_io(
+    tmp_path: Path,
+) -> None:
+    local_origin = "windows" if os.name == "nt" else "posix"
+    value = _plan_mapping(local_origin)
+    hosts = cast(list[dict[str, object]], value["hosts"])
+    hosts[0]["executable"] = "/opt/aec/bin/codex" if os.name == "nt" else "//host/share/codex"
+    value["plan_digest"] = _digest(value)
+    path = tmp_path / "foreign-executable.json"
+    _write_plan(path, value)
+
+    def unexpected_source_read(_: Path) -> tuple[str, tuple[str, ...]]:
+        raise AssertionError("foreign executable reached local I/O")
+
+    with pytest.raises(ValueError, match="current runtime"):
+        run_experiment(
+            path,
+            cast(str, value["plan_digest"]),
+            source_state_reader=unexpected_source_read,
+        )
 
 
 def test_worker_rejects_foreign_plan_before_local_io_or_host_execution(tmp_path: Path) -> None:

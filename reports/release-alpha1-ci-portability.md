@@ -1,6 +1,6 @@
 # Release alpha.1 CI portability correction
 
-Status: implementation verified locally; independent review and hosted CI pending
+Status: independent-review remediation verified locally; re-review and hosted CI pending
 
 ## Authority and scope
 
@@ -29,14 +29,25 @@ Status: implementation verified locally; independent review and hosted CI pendin
 | R3 Persisted/runtime path audit | complete | Three persisted identities separated from native runtime operations |
 | R4 Failing portability tests | complete | Three expected failures observed before implementation; traversal test separately observed two expected failures |
 | R5 Minimal lower-layer correction | complete | Portable lexical validation plus explicit local runtime binding |
-| R6 Local deterministic verification | complete | Ruff, strict mypy, 255 tests, demo/rescore, diff check |
-| R7 Independent read-only review | in progress | Path flavour, runtime containment, digest/history focus |
+| R6 Local deterministic verification | complete | Ruff, strict mypy, 258 tests, Windows/Linux portability, demo/rescore, diff check |
+| R7 Independent read-only review | in progress | Initial NOT READY; two blockers remediated; focused re-review pending |
 | R8 Public hotfix PR and hosted CI | pending | CI must execute repository steps and pass |
 | R9 Normal merge and post-merge gates | pending | Clean clone plus push-triggered main CI |
 | R10 Tag, prerelease, publication record | pending | Tag remains pinned to verified release SHA |
 
-## Current finding
+## Root cause and correction
 
+A persisted experiment path describes the producer host's path identity; a native `Path` describes the current reader or executor. The original implementation used the latter to answer the former question. The correction keeps the original serialized string authoritative for digest/replay, parses a separate lexical Windows/POSIX identity for validation, and requires that identity to match the native runtime before any scheduler, worker, filesystem, Git, or host-process operation.
+
+## Independent review and disposition
+
+Initial reviewer verdict at `04c9170f9c46e0712422fd85deecaf7cca489ae9`: `NOT READY`.
+
+- `VALID_CURRENT_SCOPE` high: `//host/share/tool` was parsed as Windows UNC but could pass POSIX native absoluteness and reach adapter probe. Resolved by comparing parsed flavour with the runtime before local I/O or executable use; an OS-sensitive regression covers the dual-flavour spelling.
+- `VALID_CURRENT_SCOPE` medium: `PurePath` normalized valid raw spellings such as `C:/aec`, `/srv//aec`, and `/srv/./aec`, causing digest mismatch. Resolved by preserving raw text separately from the comparison identity; round-trip tests cover both flavours and noncanonical absolute spellings.
+- `QUESTION` low: the replay fixture is representative rather than an authentic tracked historical plan. The limitation remains explicit, and the canonical representative Windows mapping now has a pinned digest constant.
+
+No schema, scenario, oracle, result, adapter-control, or historical evidence change was required.
 
 ## Path-semantics audit
 
@@ -51,12 +62,12 @@ No historical raw experiment plan is tracked in the public tree. The new fixed r
 ## Local verification
 
 - Focused portability RED: three expected failures from foreign plan replay/runtime binding; separate traversal RED: two expected containment failures.
-- Focused portability GREEN: 12 passed.
-- Affected plan/aggregate/scheduler/worker/M5 regressions: 61 passed.
+- Focused portability GREEN after review remediation: 15 passed on Windows and 15 passed in an ephemeral Linux Python 3.12 container.
+- Affected plan/aggregate/scheduler/worker/M5 regressions: 64 passed.
 - Ruff format: 124 files formatted.
 - Ruff lint: passed.
 - Strict mypy: 27 source files passed.
-- Full pytest/schema/contract suite: 255 passed in 42.89 seconds.
+- Full pytest/schema/contract suite after review remediation: 258 passed in 42.64 seconds.
 - Deterministic reference: `AUTH-001@1.0.0`, `GUARDED_PASS`, functional/control `PASS`/`PASS`, `offline_rescore_equal: true`; temporary synthetic evidence removed.
 - `git diff --check`: passed.
 - Scenarios, oracles, adapters, result classifications, schemas, plan serialization keys, and digest input mapping are unchanged.
