@@ -22,7 +22,7 @@ _REVISION = re.compile(r"[0-9a-f]{40}")
 _SAFE_ID = re.compile(r"[a-z0-9][a-z0-9-]{0,95}")
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, eq=False)
 class _PersistedPath:
     raw: str
     identity: PurePath
@@ -32,6 +32,16 @@ class _PersistedPath:
 
     def __str__(self) -> str:
         return self.raw
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, _PersistedPath):
+            return self.raw == other.raw
+        if isinstance(other, PurePath):
+            return self.raw == str(other)
+        return False
+
+    def __hash__(self) -> int:
+        return hash(self.identity)
 
 
 @dataclass(frozen=True, slots=True)
@@ -189,8 +199,8 @@ class ExperimentPlan:
         stored_output, output_identity = _validated_persisted_path(self.output_root)
         normalized_source = _normalized_persisted_path(source_identity)
         normalized_output = _normalized_persisted_path(output_identity)
-        if type(source_identity) is not type(
-            output_identity
+        if not _same_path_flavour(
+            source_identity, output_identity
         ) or not normalized_output.is_relative_to(normalized_source):
             raise ValueError("experiment output must be contained by the source root")
         if self.scenario_id != "AUTH-001":
@@ -487,8 +497,11 @@ def bind_plan_to_local_runtime(plan: ExperimentPlan) -> ExperimentPlan:
     validated = plan.validated()
     _, source_identity = _validated_persisted_path(validated.source_root)
     _, output_identity = _validated_persisted_path(validated.output_root)
+    host_identities = tuple(_portable_absolute_path(host.executable) for host in validated.hosts)
     if not _is_runtime_path(source_identity) or not _is_runtime_path(output_identity):
         raise ValueError("experiment paths are incompatible with the current runtime")
+    if any(identity is None or not _is_runtime_path(identity) for identity in host_identities):
+        raise ValueError("host executable path is incompatible with the current runtime")
     source = Path(validated.source_root)
     output = Path(validated.output_root)
     if not source.is_absolute() or not output.is_absolute():
@@ -497,10 +510,6 @@ def bind_plan_to_local_runtime(plan: ExperimentPlan) -> ExperimentPlan:
     output = output.resolve()
     if not output.is_relative_to(source):
         raise ValueError("experiment output must be contained by the source root")
-    for host in validated.hosts:
-        identity = _portable_absolute_path(host.executable)
-        if identity is None or not _is_runtime_path(identity):
-            raise ValueError("host executable path is incompatible with the current runtime")
     return replace(validated, source_root=source, output_root=output)
 
 
@@ -510,8 +519,7 @@ def _validated_persisted_path(
     if isinstance(value, Path):
         if not value.is_absolute():
             raise ValueError("source and output paths must be absolute")
-        resolved = value.resolve()
-        return resolved, resolved
+        return value, value
     if isinstance(value, _PersistedPath):
         return value, value.identity
     raw = str(value)
@@ -540,6 +548,10 @@ def _portable_absolute_path(value: str) -> PurePath | None:
     return None
 
 
+def _same_path_flavour(left: PurePath, right: PurePath) -> bool:
+    return isinstance(left, PureWindowsPath) is isinstance(right, PureWindowsPath)
+
+
 def _is_runtime_path(identity: PurePath) -> bool:
     runtime_is_windows = isinstance(PurePath(), PureWindowsPath)
     return isinstance(identity, PureWindowsPath) is runtime_is_windows
@@ -550,9 +562,6 @@ def _required_absolute_path(value: Mapping[str, object], key: str) -> Path | _Pe
     identity = _portable_absolute_path(raw)
     if identity is None:
         raise ValueError("source and output paths must be absolute")
-    native = Path(raw)
-    if _is_runtime_path(identity) and native.is_absolute() and str(native) == raw:
-        return native
     return _PersistedPath(raw, identity)
 
 

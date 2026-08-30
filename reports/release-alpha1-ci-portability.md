@@ -29,8 +29,8 @@ Status: independent-review remediation verified locally; re-review and hosted CI
 | R3 Persisted/runtime path audit | complete | Three persisted identities separated from native runtime operations |
 | R4 Failing portability tests | complete | Three expected failures observed before implementation; traversal test separately observed two expected failures |
 | R5 Minimal lower-layer correction | complete | Portable lexical validation plus explicit local runtime binding |
-| R6 Local deterministic verification | complete | Ruff, strict mypy, 258 tests, Windows/Linux portability, demo/rescore, diff check |
-| R7 Independent read-only review | in progress | Initial NOT READY; two blockers remediated; focused re-review pending |
+| R6 Local deterministic verification | complete | Ruff, strict mypy, 263 tests, Windows/Linux portability, demo/rescore, diff check |
+| R7 Independent read-only review | in progress | Initial and focused re-review findings remediated; final exact-commit re-review pending |
 | R8 Public hotfix PR and hosted CI | pending | CI must execute repository steps and pass |
 | R9 Normal merge and post-merge gates | pending | Clean clone plus push-triggered main CI |
 | R10 Tag, prerelease, publication record | pending | Tag remains pinned to verified release SHA |
@@ -47,7 +47,13 @@ Initial reviewer verdict at `04c9170f9c46e0712422fd85deecaf7cca489ae9`: `NOT REA
 - `VALID_CURRENT_SCOPE` medium: `PurePath` normalized valid raw spellings such as `C:/aec`, `/srv//aec`, and `/srv/./aec`, causing digest mismatch. Resolved by preserving raw text separately from the comparison identity; round-trip tests cover both flavours and noncanonical absolute spellings.
 - `QUESTION` low: the replay fixture is representative rather than an authentic tracked historical plan. The limitation remains explicit, and the canonical representative Windows mapping now has a pinned digest constant.
 
-No schema, scenario, oracle, result, adapter-control, or historical evidence change was required.
+Focused re-review verdict at `bc7012e6c543d3b5ef48ee1488202568449f92ed`: `NOT READY`.
+
+- `VALID_CURRENT_SCOPE` medium: exact concrete-class comparison rejected mixed canonical/noncanonical paths of the same flavour. Resolved by comparing Windows-versus-POSIX flavour, with both-flavour regressions.
+- `VALID_CURRENT_SCOPE` medium: validation resolved a digest-bound persisted root containing a lexical parent segment, so the returned mapping no longer matched its digest. Resolved by retaining the exact persisted spelling through every validation/revalidation; local resolution occurs only in runtime binding.
+- `VALID_CURRENT_SCOPE` medium: source/output resolution preceded executable-flavour rejection. Resolved by parsing and checking all source, output, and executable identities before any native `Path.resolve()` call; an ordering regression makes resolution fail if reached early.
+
+No schema, scenario, oracle, result, adapter-control, canonical serialization, digest input, or historical evidence change was required.
 
 ## Path-semantics audit
 
@@ -62,12 +68,12 @@ No historical raw experiment plan is tracked in the public tree. The new fixed r
 ## Local verification
 
 - Focused portability RED: three expected failures from foreign plan replay/runtime binding; separate traversal RED: two expected containment failures.
-- Focused portability GREEN after review remediation: 15 passed on Windows and 15 passed in an ephemeral Linux Python 3.12 container.
-- Affected plan/aggregate/scheduler/worker/M5 regressions: 64 passed.
+- Focused portability GREEN after both review remediations: 20 passed on Windows and 20 passed in an ephemeral Linux Python 3.12 container.
+- Affected plan/aggregate/scheduler/worker/M5 regressions: 69 passed.
 - Ruff format: 124 files formatted.
 - Ruff lint: passed.
 - Strict mypy: 27 source files passed.
-- Full pytest/schema/contract suite after review remediation: 258 passed in 42.64 seconds.
+- Full pytest/schema/contract suite after both review remediations: 263 passed in 43.38 seconds.
 - Deterministic reference: `AUTH-001@1.0.0`, `GUARDED_PASS`, functional/control `PASS`/`PASS`, `offline_rescore_equal: true`; temporary synthetic evidence removed.
 - `git diff --check`: passed.
 - Scenarios, oracles, adapters, result classifications, schemas, plan serialization keys, and digest input mapping are unchanged.

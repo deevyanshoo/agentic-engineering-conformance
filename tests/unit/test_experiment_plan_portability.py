@@ -152,6 +152,54 @@ def test_plan_preserves_noncanonical_absolute_spelling_and_digest(
 
 
 @pytest.mark.parametrize(
+    ("origin", "source_root", "output_root"),
+    [
+        ("windows", r"C:\aec", r"C:\aec\reports\\runs\.\portable-plan"),
+        ("posix", "/srv/aec", "/srv/aec/reports//runs/./portable-plan"),
+    ],
+)
+def test_plan_accepts_mixed_canonical_and_preserved_same_flavour_paths(
+    tmp_path: Path, origin: str, source_root: str, output_root: str
+) -> None:
+    value = _plan_mapping(origin)
+    value["source_root"] = source_root
+    value["output_root"] = output_root
+    value["plan_digest"] = _digest(value)
+    path = tmp_path / f"mixed-{origin}.json"
+    _write_plan(path, value)
+
+    loaded = load_plan(path)
+
+    assert loaded.to_mapping() == value
+    assert loaded.validated().to_mapping() == value
+
+
+@pytest.mark.parametrize(
+    ("origin", "source_root", "output_root"),
+    [
+        ("windows", r"C:\aec", r"C:\aec\reports\..\runs\portable-plan"),
+        ("posix", "/srv/aec", "/srv/aec/reports/../runs/portable-plan"),
+    ],
+)
+def test_plan_preserves_contained_parent_segments_across_revalidation(
+    tmp_path: Path, origin: str, source_root: str, output_root: str
+) -> None:
+    value = _plan_mapping(origin)
+    value["source_root"] = source_root
+    value["output_root"] = output_root
+    value["plan_digest"] = _digest(value)
+    path = tmp_path / f"contained-parent-{origin}.json"
+    _write_plan(path, value)
+
+    loaded = load_plan(path)
+    revalidated = loaded.validated()
+
+    assert loaded.to_mapping() == value
+    assert revalidated.to_mapping() == value
+    assert revalidated.plan_digest == value["plan_digest"]
+
+
+@pytest.mark.parametrize(
     "executable",
     ["tools/codex", r"C:tools\codex.CMD", r"\tools\codex.CMD", "", "bad\x00path"],
 )
@@ -194,6 +242,26 @@ def test_plan_normalizes_parent_segments_before_containment_check(
 
     with pytest.raises(ValueError, match="contained"):
         load_plan(path)
+
+
+def test_worker_checks_all_path_flavours_before_resolving(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    local_origin = "windows" if os.name == "nt" else "posix"
+    value = _plan_mapping(local_origin)
+    hosts = cast(list[dict[str, object]], value["hosts"])
+    hosts[0]["executable"] = "/opt/aec/bin/codex" if os.name == "nt" else "//host/share/codex"
+    value["plan_digest"] = _digest(value)
+    path = tmp_path / "flavour-order.json"
+    _write_plan(path, value)
+
+    def forbidden_resolve(*_: object, **__: object) -> Path:
+        raise AssertionError("path resolution occurred before flavour rejection")
+
+    monkeypatch.setattr(Path, "resolve", forbidden_resolve)
+
+    with pytest.raises(ValueError, match="current runtime"):
+        run_experiment(path, cast(str, value["plan_digest"]))
 
 
 def test_worker_rejects_foreign_or_ambiguous_executable_before_local_io(
