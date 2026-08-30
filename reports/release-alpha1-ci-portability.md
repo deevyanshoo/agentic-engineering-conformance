@@ -1,6 +1,6 @@
 # Release alpha.1 CI portability correction
 
-Status: hosted-CI boundary remediation verified locally; exact-head re-review and hosted CI pending
+Status: local implementation and independent review complete; hosted CI pending
 
 ## Authority and scope
 
@@ -30,7 +30,7 @@ Status: hosted-CI boundary remediation verified locally; exact-head re-review an
 | R4 Failing portability tests | complete | Three expected failures observed before implementation; traversal test separately observed two expected failures |
 | R5 Minimal lower-layer correction | complete | Portable lexical validation plus explicit local runtime binding |
 | R6 Local deterministic verification | complete | Ruff, strict mypy, 268 tests on Windows/Linux Python 3.11, demo/rescore, diff check |
-| R7 Independent read-only review | in progress | Earlier exact-head READY; hosted-CI boundary correction requires focused re-review |
+| R7 Independent read-only review | complete | Final exact-head `READY` at `07ebcf6`; no remaining findings |
 | R8 Public hotfix PR and hosted CI | in progress | PR #6 opened; first run exposed premature runtime binding and was remediated without retry |
 | R9 Normal merge and post-merge gates | pending | Clean clone plus push-triggered main CI |
 | R10 Tag, prerelease, publication record | pending | Tag remains pinned to verified release SHA |
@@ -60,6 +60,8 @@ The first PR workflow at head `7afbc58dc30ef9506709e33bb0cbf1b62ea3fd26` (run `3
 Focused boundary re-review verdict at `ea63a2bab0b6690bd4e298c4ddcba87b6b027d63`: `NOT READY` with one high `VALID_CURRENT_SCOPE` finding. Passing `default_runtime_factory` explicitly bypassed the first boundary correction because locality was inferred from `runtime_factory is None`. The worker now requires local executable flavour by default for every factory. A narrowly named test-only opt-in requires both a non-default factory and an adapter process runner that explicitly declares `executes_subprocess = False`; the worker validates that marker before adapter probe. Regressions cover the explicit default factory and a wrapped in-tree subprocess factory, so neither can bypass locality enforcement.
 
 Second focused boundary re-review verdict at `1bcaed66ecbb981c6533a6c77a8520b071fd6063`: `NOT READY` with one medium `VALID_CURRENT_SCOPE` finding. The returned runner marker was checked only after arbitrary factory construction code could execute. The test-only opt-in now requires the factory function itself to declare `executes_subprocess = False`, and the worker validates that marker before invoking it. The returned runner marker remains a defense-in-depth check before adapter probe. An eager unmarked-factory regression proves the factory is never called.
+
+Final exact-head record review verdict at `07ebcf6e5ed0b20c13f9d435c641d5dc684643e2`: `READY`, with no remaining findings. The reviewer confirmed strict default execution enforcement, portable persisted-plan semantics, and the explicit prevalidated non-subprocess test exception are described without contradiction.
 
 No schema, scenario, oracle, result, adapter-control, canonical serialization, digest input, or historical evidence change was required.
 
