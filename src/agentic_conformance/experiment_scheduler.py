@@ -38,6 +38,7 @@ from agentic_conformance.experiment_aggregate import (
 from agentic_conformance.experiment_plan import (
     ExperimentPlan,
     HostBinding,
+    bind_plan_to_local_runtime,
     build_auth_plan,
     build_paired_auth_plan,
     load_plan,
@@ -407,7 +408,7 @@ def launch_plan(
     controller: SchedulerController | None = None,
     identity_reader: Callable[[], str] = current_windows_identity,
 ) -> dict[str, object]:
-    plan = load_plan(plan_path)
+    plan = bind_plan_to_local_runtime(load_plan(plan_path))
     _assert_fresh_runtime_output(plan)
     identity = identity_reader()
     spec = ScheduledTaskSpec.create(
