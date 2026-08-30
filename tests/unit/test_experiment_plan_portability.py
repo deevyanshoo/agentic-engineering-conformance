@@ -10,7 +10,7 @@ from typing import cast
 import pytest
 
 from agentic_conformance.experiment_plan import load_plan, write_plan
-from agentic_conformance.experiment_worker import run_experiment
+from agentic_conformance.experiment_worker import default_runtime_factory, run_experiment
 
 WINDOWS_REPRESENTATIVE_DIGEST = (
     "sha256:6977468641764e4629814d037d41ebf92f1ebec597ef384c21919015738b16ab"
@@ -284,6 +284,48 @@ def test_worker_checks_all_path_flavours_before_resolving(
 
     with pytest.raises(ValueError, match="current runtime"):
         run_experiment(path, cast(str, value["plan_digest"]))
+
+
+def test_explicit_default_runtime_factory_cannot_bypass_flavour_check(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    local_origin = "windows" if os.name == "nt" else "posix"
+    value = _plan_mapping(local_origin)
+    hosts = cast(list[dict[str, object]], value["hosts"])
+    hosts[0]["executable"] = "/opt/aec/bin/codex" if os.name == "nt" else "//host/share/codex"
+    value["plan_digest"] = _digest(value)
+    path = tmp_path / "explicit-default-factory.json"
+    _write_plan(path, value)
+
+    def forbidden_resolve(*_: object, **__: object) -> Path:
+        raise AssertionError("path resolution occurred before flavour rejection")
+
+    monkeypatch.setattr(Path, "resolve", forbidden_resolve)
+
+    with pytest.raises(ValueError, match="current runtime"):
+        run_experiment(
+            path,
+            cast(str, value["plan_digest"]),
+            runtime_factory=default_runtime_factory,
+        )
+
+
+def test_default_runtime_factory_is_forbidden_for_nonlocal_test_opt_in(
+    tmp_path: Path,
+) -> None:
+    local_origin = "windows" if os.name == "nt" else "posix"
+    value = _plan_mapping(local_origin)
+    value["plan_digest"] = _digest(value)
+    path = tmp_path / "invalid-default-test-seam.json"
+    _write_plan(path, value)
+
+    with pytest.raises(ValueError, match="deterministic runtime factory"):
+        run_experiment(
+            path,
+            cast(str, value["plan_digest"]),
+            runtime_factory=default_runtime_factory,
+            allow_nonlocal_executables_for_testing=True,
+        )
 
 
 def test_worker_rejects_foreign_or_ambiguous_executable_before_local_io(

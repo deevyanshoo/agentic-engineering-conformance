@@ -119,11 +119,17 @@ def run_experiment(
     *,
     ancestry_reader: Callable[[int], ProcessAncestry] = capture_windows_ancestry,
     runtime_factory: RuntimeFactory | None = None,
+    allow_nonlocal_executables_for_testing: bool = False,
     source_state_reader: SourceStateReader | None = None,
     environment_reader: Callable[[], Mapping[str, str]] = sanitized_environment,
 ) -> WorkerResult:
+    if allow_nonlocal_executables_for_testing and (
+        runtime_factory is None or runtime_factory is default_runtime_factory
+    ):
+        raise ValueError("nonlocal executable test seam requires a deterministic runtime factory")
     plan = bind_plan_to_local_runtime(
-        load_plan(plan_path), require_local_executables=runtime_factory is None
+        load_plan(plan_path),
+        require_local_executables=not allow_nonlocal_executables_for_testing,
     )
     if plan.plan_digest != expected_plan_digest:
         raise ValueError("experiment plan differs from scheduled digest binding")
@@ -167,6 +173,8 @@ def run_experiment(
         callback = _execution_preflight(plan, binding, state_reader)
         try:
             runtime = factory(binding, workspace_parent, callback, treatment)
+            if allow_nonlocal_executables_for_testing:
+                _validate_nonexecuting_test_runtime(runtime)
             _validate_runtime_identity(binding, runtime.adapter)
             if getattr(runtime.adapter, "treatment", None) is not treatment:
                 raise RuntimeError("adapter treatment differs from immutable trial binding")
@@ -621,6 +629,14 @@ def _validate_description(binding: HostBinding, description: object) -> None:
             raise RuntimeError("Claude invocation differs from immutable plan binding")
     else:
         raise ValueError("unsupported host binding")
+
+
+def _validate_nonexecuting_test_runtime(runtime: HostRuntime) -> None:
+    runner = getattr(runtime.adapter, "_process_runner", None)
+    if getattr(runner, "executes_subprocess", None) is not False:
+        raise ValueError(
+            "nonlocal executable test seam requires an explicitly non-subprocess runner"
+        )
 
 
 def _validate_runtime_identity(binding: HostBinding, adapter: Adapter) -> None:

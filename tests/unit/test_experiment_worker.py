@@ -28,7 +28,11 @@ from agentic_conformance.experiment_plan import (
     build_paired_auth_plan,
     write_plan,
 )
-from agentic_conformance.experiment_worker import HostRuntime, run_experiment
+from agentic_conformance.experiment_worker import (
+    HostRuntime,
+    default_runtime_factory,
+    run_experiment,
+)
 from agentic_conformance.process_ancestry import ProcessAncestry, ProcessNode
 from agentic_conformance.result import RunClassification
 from agentic_conformance.runner import scenario_digest
@@ -38,6 +42,8 @@ ROOT = Path(__file__).parents[2]
 
 
 class HostProcess:
+    executes_subprocess = False
+
     def __init__(
         self,
         host: str,
@@ -308,6 +314,7 @@ def test_neutral_worker_executes_exactly_six_and_offline_rescores(tmp_path: Path
         plan_path,
         plan.plan_digest,
         ancestry_reader=_neutral_ancestry,
+        allow_nonlocal_executables_for_testing=True,
         runtime_factory=_factory(processes),
         source_state_reader=lambda _: (plan.benchmark_revision, ()),
         environment_reader=lambda: {"os": "nt", "python": "test"},
@@ -373,6 +380,7 @@ def test_worker_rejects_nested_agent_ancestry_before_host_preflight(tmp_path: Pa
         plan_path,
         plan.plan_digest,
         ancestry_reader=_nested_ancestry,
+        allow_nonlocal_executables_for_testing=True,
         runtime_factory=forbidden_factory,
         source_state_reader=lambda _: (plan.benchmark_revision, ()),
         environment_reader=lambda: {"os": "nt"},
@@ -383,6 +391,40 @@ def test_worker_rejects_nested_agent_ancestry_before_host_preflight(tmp_path: Pa
     assert result.outcomes == ()
     assert factory_calls == []
     assert not result.summary_path.exists()
+
+
+def test_nonlocal_test_opt_in_rejects_wrapped_subprocess_runtime(
+    tmp_path: Path,
+) -> None:
+    plan = _plan(tmp_path)
+    plan_path = plan.output_root / "experiment-plan.json"
+    write_plan(plan_path, plan)
+
+    def wrapped_subprocess_factory(
+        binding: HostBinding,
+        workspace_parent: Path,
+        before_execute: Callable[[object], None],
+        treatment: AuthTreatment,
+    ) -> HostRuntime:
+        return default_runtime_factory(binding, workspace_parent, before_execute, treatment)
+
+    result = run_experiment(
+        plan_path,
+        plan.plan_digest,
+        ancestry_reader=_neutral_ancestry,
+        allow_nonlocal_executables_for_testing=True,
+        runtime_factory=wrapped_subprocess_factory,
+        source_state_reader=lambda _: (plan.benchmark_revision, ()),
+    )
+
+    assert all(
+        outcome.classification is RunClassification.INVALID_RUN for outcome in result.outcomes
+    )
+    assert all(not outcome.attempted for outcome in result.outcomes)
+    assert all(
+        any("non-subprocess runner" in limitation for limitation in outcome.limitations)
+        for outcome in result.outcomes
+    )
 
 
 def test_unavailable_host_is_unsupported_without_model_calls(tmp_path: Path) -> None:
@@ -397,6 +439,7 @@ def test_unavailable_host_is_unsupported_without_model_calls(tmp_path: Path) -> 
         plan_path,
         plan.plan_digest,
         ancestry_reader=_neutral_ancestry,
+        allow_nonlocal_executables_for_testing=True,
         runtime_factory=_factory(processes),
         source_state_reader=lambda _: (plan.benchmark_revision, ()),
         environment_reader=lambda: {"os": "nt"},
@@ -435,6 +478,7 @@ def test_worker_rejects_recomputed_replacement_plan_against_scheduled_digest(
             plan_path,
             plan.plan_digest,
             ancestry_reader=_neutral_ancestry,
+            allow_nonlocal_executables_for_testing=True,
             runtime_factory=_factory(
                 {"codex": HostProcess("codex"), "claude": HostProcess("claude")}
             ),
@@ -457,6 +501,7 @@ def test_worker_rejects_available_but_wrong_auth_mode_before_model_call(
         plan_path,
         plan.plan_digest,
         ancestry_reader=_neutral_ancestry,
+        allow_nonlocal_executables_for_testing=True,
         runtime_factory=_factory(processes),
         source_state_reader=lambda _: (plan.benchmark_revision, ()),
     )
@@ -482,6 +527,7 @@ def test_failed_host_invocation_retains_process_ancestry_diagnostics(
         plan_path,
         plan.plan_digest,
         ancestry_reader=_neutral_ancestry,
+        allow_nonlocal_executables_for_testing=True,
         runtime_factory=_factory(processes),
         source_state_reader=lambda _: (plan.benchmark_revision, ()),
     )
@@ -507,6 +553,7 @@ def test_paired_worker_executes_exactly_twelve_with_distinct_treatments(
         plan_path,
         plan.plan_digest,
         ancestry_reader=_neutral_ancestry,
+        allow_nonlocal_executables_for_testing=True,
         runtime_factory=_factory(processes),
         source_state_reader=lambda _: (plan.benchmark_revision, ()),
         environment_reader=lambda: {"os": "nt", "python": "test"},
@@ -564,6 +611,7 @@ def test_neutral_worker_keeps_fixture_paths_out_of_deep_result_tree(tmp_path: Pa
         plan_path,
         plan.plan_digest,
         ancestry_reader=_neutral_ancestry,
+        allow_nonlocal_executables_for_testing=True,
         runtime_factory=capture,
         source_state_reader=lambda _: (plan.benchmark_revision, ()),
         environment_reader=lambda: {"os": "nt", "python": "test"},

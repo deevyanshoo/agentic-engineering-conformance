@@ -29,7 +29,7 @@ Status: hosted-CI boundary remediation verified locally; exact-head re-review an
 | R3 Persisted/runtime path audit | complete | Three persisted identities separated from native runtime operations |
 | R4 Failing portability tests | complete | Three expected failures observed before implementation; traversal test separately observed two expected failures |
 | R5 Minimal lower-layer correction | complete | Portable lexical validation plus explicit local runtime binding |
-| R6 Local deterministic verification | complete | Ruff, strict mypy, 264 tests on Windows and Linux, demo/rescore, diff check |
+| R6 Local deterministic verification | complete | Ruff, strict mypy, 267 tests on Windows/Linux Python 3.11, demo/rescore, diff check |
 | R7 Independent read-only review | in progress | Earlier exact-head READY; hosted-CI boundary correction requires focused re-review |
 | R8 Public hotfix PR and hosted CI | in progress | PR #6 opened; first run exposed premature runtime binding and was remediated without retry |
 | R9 Normal merge and post-merge gates | pending | Clean clone plus push-triggered main CI |
@@ -57,6 +57,8 @@ Final exact-commit review verdict at `dad9a63ec75e5b43581bdcbf0ff6961816b3a3c7`:
 
 The first PR workflow at head `7afbc58dc30ef9506709e33bb0cbf1b62ea3fd26` (run `33326841914`, job `99298389337`) executed all repository setup, Ruff, and mypy steps, then reported 18 failed and 245 passed tests. The remaining failure was boundary placement: plan writing and injected deterministic runtime seams were incorrectly required to use current-OS host executables. The compatibility check now applies only when `run_experiment` selects its default real-host runtime; portable plan persistence remains OS-neutral, and an explicit injected runtime remains a non-executing deterministic seam. The default worker still rejects a foreign executable before native resolution, source I/O, adapter probing, or subprocess execution.
 
+Focused boundary re-review verdict at `ea63a2bab0b6690bd4e298c4ddcba87b6b027d63`: `NOT READY` with one high `VALID_CURRENT_SCOPE` finding. Passing `default_runtime_factory` explicitly bypassed the first boundary correction because locality was inferred from `runtime_factory is None`. The worker now requires local executable flavour by default for every factory. A narrowly named test-only opt-in requires both a non-default factory and an adapter process runner that explicitly declares `executes_subprocess = False`; the worker validates that marker before adapter probe. Regressions cover the explicit default factory and a wrapped in-tree subprocess factory, so neither can bypass locality enforcement.
+
 No schema, scenario, oracle, result, adapter-control, canonical serialization, digest input, or historical evidence change was required.
 
 ## Path-semantics audit
@@ -77,7 +79,7 @@ No historical raw experiment plan is tracked in the public tree. The new fixed r
 - Ruff format: 124 files formatted.
 - Ruff lint: passed.
 - Strict mypy: 27 source files passed.
-- Full pytest/schema/contract suite after hosted-CI boundary remediation: 264 passed on Windows in 45.66 seconds and 264 passed in a Git-equipped ephemeral Linux Python 3.12 container in 11.83 seconds.
+- Full pytest/schema/contract suite after test-seam hardening: 267 passed on Windows in 43.54 seconds and 267 passed in a Git-equipped ephemeral Linux Python 3.11.16 container in 10.74 seconds.
 - Deterministic reference: `AUTH-001@1.0.0`, `GUARDED_PASS`, functional/control `PASS`/`PASS`, `offline_rescore_equal: true`; temporary synthetic evidence removed.
 - `git diff --check`: passed.
 - Scenarios, oracles, adapters, result classifications, schemas, plan serialization keys, and digest input mapping are unchanged.
