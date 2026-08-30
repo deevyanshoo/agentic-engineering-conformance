@@ -9,7 +9,7 @@ from typing import cast
 
 import pytest
 
-from agentic_conformance.experiment_plan import load_plan
+from agentic_conformance.experiment_plan import load_plan, write_plan
 from agentic_conformance.experiment_worker import run_experiment
 
 WINDOWS_REPRESENTATIVE_DIGEST = (
@@ -242,6 +242,28 @@ def test_plan_normalizes_parent_segments_before_containment_check(
 
     with pytest.raises(ValueError, match="contained"):
         load_plan(path)
+
+
+def test_plan_write_preserves_foreign_host_identity_without_executing_it(
+    tmp_path: Path,
+) -> None:
+    local_origin = "windows" if os.name == "nt" else "posix"
+    value = _plan_mapping(local_origin)
+    source_root = tmp_path.resolve()
+    output_root = (source_root / "runs").resolve()
+    value["source_root"] = str(source_root)
+    value["output_root"] = str(output_root)
+    hosts = cast(list[dict[str, object]], value["hosts"])
+    hosts[0]["executable"] = "/opt/aec/bin/codex" if os.name == "nt" else "//host/share/codex"
+    value["plan_digest"] = _digest(value)
+    persisted = tmp_path / "portable-write-input.json"
+    _write_plan(persisted, value)
+    plan = load_plan(persisted)
+    target = output_root / "experiment-plan.json"
+
+    write_plan(target, plan)
+
+    assert load_plan(target).to_mapping() == value
 
 
 def test_worker_checks_all_path_flavours_before_resolving(

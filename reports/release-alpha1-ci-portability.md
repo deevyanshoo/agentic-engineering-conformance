@@ -1,6 +1,6 @@
 # Release alpha.1 CI portability correction
 
-Status: local implementation and independent review complete; hosted CI pending
+Status: hosted-CI boundary remediation verified locally; exact-head re-review and hosted CI pending
 
 ## Authority and scope
 
@@ -29,9 +29,9 @@ Status: local implementation and independent review complete; hosted CI pending
 | R3 Persisted/runtime path audit | complete | Three persisted identities separated from native runtime operations |
 | R4 Failing portability tests | complete | Three expected failures observed before implementation; traversal test separately observed two expected failures |
 | R5 Minimal lower-layer correction | complete | Portable lexical validation plus explicit local runtime binding |
-| R6 Local deterministic verification | complete | Ruff, strict mypy, 263 tests, Windows/Linux portability, demo/rescore, diff check |
-| R7 Independent read-only review | complete | Final exact-commit verdict `READY`; no remaining current-scope findings |
-| R8 Public hotfix PR and hosted CI | pending | CI must execute repository steps and pass |
+| R6 Local deterministic verification | complete | Ruff, strict mypy, 264 tests on Windows and Linux, demo/rescore, diff check |
+| R7 Independent read-only review | in progress | Earlier exact-head READY; hosted-CI boundary correction requires focused re-review |
+| R8 Public hotfix PR and hosted CI | in progress | PR #6 opened; first run exposed premature runtime binding and was remediated without retry |
 | R9 Normal merge and post-merge gates | pending | Clean clone plus push-triggered main CI |
 | R10 Tag, prerelease, publication record | pending | Tag remains pinned to verified release SHA |
 
@@ -55,6 +55,8 @@ Focused re-review verdict at `bc7012e6c543d3b5ef48ee1488202568449f92ed`: `NOT RE
 
 Final exact-commit review verdict at `dad9a63ec75e5b43581bdcbf0ff6961816b3a3c7`: `READY`, with no remaining `VALID_CURRENT_SCOPE` findings. The reviewer independently reproduced stable mapping/digest behavior, exercised Windows/POSIX/UNC and malformed-path edges, confirmed existing plan equality contracts, and verified that all runtime flavours are rejected before native resolution or I/O.
 
+The first PR workflow at head `7afbc58dc30ef9506709e33bb0cbf1b62ea3fd26` (run `33326841914`, job `99298389337`) executed all repository setup, Ruff, and mypy steps, then reported 18 failed and 245 passed tests. The remaining failure was boundary placement: plan writing and injected deterministic runtime seams were incorrectly required to use current-OS host executables. The compatibility check now applies only when `run_experiment` selects its default real-host runtime; portable plan persistence remains OS-neutral, and an explicit injected runtime remains a non-executing deterministic seam. The default worker still rejects a foreign executable before native resolution, source I/O, adapter probing, or subprocess execution.
+
 No schema, scenario, oracle, result, adapter-control, canonical serialization, digest input, or historical evidence change was required.
 
 ## Path-semantics audit
@@ -75,7 +77,7 @@ No historical raw experiment plan is tracked in the public tree. The new fixed r
 - Ruff format: 124 files formatted.
 - Ruff lint: passed.
 - Strict mypy: 27 source files passed.
-- Full pytest/schema/contract suite after both review remediations: 263 passed in 43.38 seconds.
+- Full pytest/schema/contract suite after hosted-CI boundary remediation: 264 passed on Windows in 45.66 seconds and 264 passed in a Git-equipped ephemeral Linux Python 3.12 container in 11.83 seconds.
 - Deterministic reference: `AUTH-001@1.0.0`, `GUARDED_PASS`, functional/control `PASS`/`PASS`, `offline_rescore_equal: true`; temporary synthetic evidence removed.
 - `git diff --check`: passed.
 - Scenarios, oracles, adapters, result classifications, schemas, plan serialization keys, and digest input mapping are unchanged.

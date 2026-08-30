@@ -492,7 +492,9 @@ def load_plan(path: Path) -> ExperimentPlan:
     return ExperimentPlan.from_mapping(cast(Mapping[str, object], raw))
 
 
-def bind_plan_to_local_runtime(plan: ExperimentPlan) -> ExperimentPlan:
+def bind_plan_to_local_runtime(
+    plan: ExperimentPlan, *, require_local_executables: bool = False
+) -> ExperimentPlan:
     """Bind portable persisted path identities to this machine before local I/O."""
     validated = plan.validated()
     _, source_identity = _validated_persisted_path(validated.source_root)
@@ -500,7 +502,9 @@ def bind_plan_to_local_runtime(plan: ExperimentPlan) -> ExperimentPlan:
     host_identities = tuple(_portable_absolute_path(host.executable) for host in validated.hosts)
     if not _is_runtime_path(source_identity) or not _is_runtime_path(output_identity):
         raise ValueError("experiment paths are incompatible with the current runtime")
-    if any(identity is None or not _is_runtime_path(identity) for identity in host_identities):
+    if require_local_executables and any(
+        identity is None or not _is_runtime_path(identity) for identity in host_identities
+    ):
         raise ValueError("host executable path is incompatible with the current runtime")
     source = Path(validated.source_root)
     output = Path(validated.output_root)

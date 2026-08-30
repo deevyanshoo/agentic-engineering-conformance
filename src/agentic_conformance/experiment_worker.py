@@ -122,7 +122,9 @@ def run_experiment(
     source_state_reader: SourceStateReader | None = None,
     environment_reader: Callable[[], Mapping[str, str]] = sanitized_environment,
 ) -> WorkerResult:
-    plan = bind_plan_to_local_runtime(load_plan(plan_path))
+    plan = bind_plan_to_local_runtime(
+        load_plan(plan_path), require_local_executables=runtime_factory is None
+    )
     if plan.plan_digest != expected_plan_digest:
         raise ValueError("experiment plan differs from scheduled digest binding")
     summary_path = plan.output_root / "batch-summary.json"
