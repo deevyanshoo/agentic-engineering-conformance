@@ -31,7 +31,7 @@ Status: local implementation and independent review complete; hosted CI pending
 | R5 Minimal lower-layer correction | complete | Portable lexical validation plus explicit local runtime binding |
 | R6 Local deterministic verification | complete | Ruff, strict mypy, 268 tests on Windows/Linux Python 3.11, demo/rescore, diff check |
 | R7 Independent read-only review | complete | Final exact-head `READY` at `07ebcf6`; no remaining findings |
-| R8 Public hotfix PR and hosted CI | in progress | PR #6 opened; first run exposed premature runtime binding and was remediated without retry |
+| R8 Public hotfix PR and hosted CI | in progress | PR #6 implementation head green; final record-only head pending CI |
 | R9 Normal merge and post-merge gates | pending | Clean clone plus push-triggered main CI |
 | R10 Tag, prerelease, publication record | pending | Tag remains pinned to verified release SHA |
 
@@ -62,6 +62,8 @@ Focused boundary re-review verdict at `ea63a2bab0b6690bd4e298c4ddcba87b6b027d63`
 Second focused boundary re-review verdict at `1bcaed66ecbb981c6533a6c77a8520b071fd6063`: `NOT READY` with one medium `VALID_CURRENT_SCOPE` finding. The returned runner marker was checked only after arbitrary factory construction code could execute. The test-only opt-in now requires the factory function itself to declare `executes_subprocess = False`, and the worker validates that marker before invoking it. The returned runner marker remains a defense-in-depth check before adapter probe. An eager unmarked-factory regression proves the factory is never called.
 
 Final exact-head record review verdict at `07ebcf6e5ed0b20c13f9d435c641d5dc684643e2`: `READY`, with no remaining findings. The reviewer confirmed strict default execution enforcement, portable persisted-plan semantics, and the explicit prevalidated non-subprocess test exception are described without contradiction.
+
+Hosted CI at implementation/review head `89837ec8c6d1fff6bb0f3ceb10309257252cfe8c` is green: pull-request run `33328458028`, job `99302656136`, and companion push run `33328455396` executed install, Ruff format, Ruff lint, strict mypy, and full pytest successfully. These are changed-head validations, not retries of the failed `7afbc58` workflow.
 
 No schema, scenario, oracle, result, adapter-control, canonical serialization, digest input, or historical evidence change was required.
 
