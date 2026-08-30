@@ -123,10 +123,15 @@ def run_experiment(
     source_state_reader: SourceStateReader | None = None,
     environment_reader: Callable[[], Mapping[str, str]] = sanitized_environment,
 ) -> WorkerResult:
-    if allow_nonlocal_executables_for_testing and (
-        runtime_factory is None or runtime_factory is default_runtime_factory
-    ):
-        raise ValueError("nonlocal executable test seam requires a deterministic runtime factory")
+    if allow_nonlocal_executables_for_testing:
+        if runtime_factory is None or runtime_factory is default_runtime_factory:
+            raise ValueError(
+                "nonlocal executable test seam requires a deterministic runtime factory"
+            )
+        if getattr(runtime_factory, "executes_subprocess", None) is not False:
+            raise ValueError(
+                "nonlocal executable test seam requires the factory itself to be non-subprocess"
+            )
     plan = bind_plan_to_local_runtime(
         load_plan(plan_path),
         require_local_executables=not allow_nonlocal_executables_for_testing,
