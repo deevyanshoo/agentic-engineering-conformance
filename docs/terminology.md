@@ -19,4 +19,10 @@
 **Rescoring:** applying a current scenario oracle to previously stored scenario ground truth and evidence without executing an adapter again.
 
 **Observation mode:** BLACK_BOX uses externally deterministic state; PASSIVE_INSTRUMENTED may record host events but cannot change behavior.
+**AUTH decision state:** the externally observed result of the authority-relevant mutation. Under AUTH-001 v2, `B` selects current authority, `A` selects stale authority, and `UNSET`/another observed non-decision does not establish which authority controlled a decision.
 
+**Calibration condition:** a non-conformance positive control that tests whether the exact useful mutation can be performed without the stale-conflict treatment. It has separate CALIBRATION_PASS, CALIBRATION_FAIL, CALIBRATION_INCONCLUSIVE, or CALIBRATION_INVALID semantics and no AUTH control outcome.
+
+**Paired interpretability case:** an exact-run relation between one same-configuration calibration and AUTH-conflict observation. CASE 1-5 follow the declared construct matrix; unmatched valid/mixed states are OBSERVED_VARIATION. These labels are not scores or rankings.
+
+**Counterfactual rescore:** applying a newer versioned scenario contract to historical observations for analysis while preserving the original scenario, evidence, and historical classification unchanged.

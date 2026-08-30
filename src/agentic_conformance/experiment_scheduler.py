@@ -14,7 +14,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol, cast
 
-from agentic_conformance.adapters.auth_fixture import auth_fixture_digest
+from agentic_conformance.adapters.auth_fixture import (
+    AuthTreatment,
+    auth_fixture_base_digest,
+    auth_fixture_digest,
+    auth_treatment_digest,
+)
 from agentic_conformance.adapters.claude import ClaudeAdapter, ClaudeRunDescription
 from agentic_conformance.adapters.codex import CodexAdapter, CodexRunDescription
 from agentic_conformance.adapters.process import (
@@ -34,6 +39,7 @@ from agentic_conformance.experiment_plan import (
     ExperimentPlan,
     HostBinding,
     build_auth_plan,
+    build_paired_auth_plan,
     load_plan,
     write_plan,
 )
@@ -121,7 +127,7 @@ def render_task_xml(spec: ScheduledTaskSpec) -> str:
     ET.SubElement(registration, f"{{{_TASK_NS}}}Date").text = spec.created_at
     ET.SubElement(
         registration, f"{{{_TASK_NS}}}Description"
-    ).text = "One-time Agentic Engineering Conformance M4 neutral worker"
+    ).text = "One-time Agentic Engineering Conformance neutral worker"
     principals = ET.SubElement(task, f"{{{_TASK_NS}}}Principals")
     principal = ET.SubElement(principals, f"{{{_TASK_NS}}}Principal", {"id": "Author"})
     ET.SubElement(principal, f"{{{_TASK_NS}}}UserId").text = spec.execution_identity
@@ -244,7 +250,7 @@ class SchedulerController:
 
 
 def prepare_live_plan(
-    source_root: Path, *, batch_id: str | None = None
+    source_root: Path, *, batch_id: str | None = None, paired: bool = False
 ) -> tuple[ExperimentPlan, Path]:
     source = source_root.resolve()
     head, status = read_source_state(source)
@@ -271,13 +277,14 @@ def prepare_live_plan(
     ):
         raise RuntimeError("Claude preflight must use first-party subscription authentication")
 
+    scenario_name = "scenario-v2.json" if paired else "scenario.json"
     scenario = load_scenario(
-        source / "scenarios/authority/AUTH-001/scenario.json",
+        source / "scenarios/authority/AUTH-001" / scenario_name,
         source / "schemas/scenario.schema.json",
     )
     actual_batch = (
         batch_id
-        or "m4-neutral-"
+        or ("m5-auth-calibration-" if paired else "m4-neutral-")
         + utc_now().replace("-", "").replace(":", "").replace("Z", "").split(".")[0].casefold()
     )
     output_root = source / "reports/runs" / actual_batch
@@ -313,41 +320,61 @@ def prepare_live_plan(
     fixture_version = scenario.ground_truth.get("fixture_version")
     if not isinstance(fixture_version, str):
         raise RuntimeError("AUTH-001 fixture version is unavailable")
-    plan = build_auth_plan(
-        batch_id=actual_batch,
-        benchmark_revision=head,
-        source_root=source,
-        output_root=output_root,
-        scenario_version=scenario.version,
-        scenario_digest=scenario_digest(scenario),
-        fixture_version=fixture_version,
-        fixture_digest=auth_fixture_digest(),
-        codex=HostBinding(
-            CodexAdapter.name,
-            CodexAdapter.version,
-            codex.probed_cli_version,
-            str(Path(codex_path).resolve()),
-            codex_description.model,
-            codex_config_digest(codex_description),
-            "workspace-write;network=false",
-            "chatgpt",
-            "openai",
-            None,
-        ),
-        claude=HostBinding(
-            ClaudeAdapter.name,
-            ClaudeAdapter.version,
-            claude.probed_cli_version,
-            str(Path(claude_path).resolve()),
-            claude_description.requested_model,
-            claude_config_digest(claude_description),
-            "safe-mode;no-shell;no-web",
-            "claude.ai",
-            "firstParty",
-            claude.probed_subscription_type,
-        ),
-        created_at=utc_now(),
+    codex_binding = HostBinding(
+        CodexAdapter.name,
+        CodexAdapter.version,
+        codex.probed_cli_version,
+        str(Path(codex_path).resolve()),
+        codex_description.model,
+        codex_config_digest(codex_description),
+        "workspace-write;network=false",
+        "chatgpt",
+        "openai",
+        None,
     )
+    claude_binding = HostBinding(
+        ClaudeAdapter.name,
+        ClaudeAdapter.version,
+        claude.probed_cli_version,
+        str(Path(claude_path).resolve()),
+        claude_description.requested_model,
+        claude_config_digest(claude_description),
+        "safe-mode;no-shell;no-web",
+        "claude.ai",
+        "firstParty",
+        claude.probed_subscription_type,
+    )
+    created_at = utc_now()
+    if paired:
+        plan = build_paired_auth_plan(
+            batch_id=actual_batch,
+            benchmark_revision=head,
+            source_root=source,
+            output_root=output_root,
+            scenario_version=scenario.version,
+            scenario_digest=scenario_digest(scenario),
+            fixture_version=fixture_version,
+            fixture_base_digest=auth_fixture_base_digest(),
+            calibration_prompt_digest=auth_treatment_digest(AuthTreatment.CALIBRATION),
+            auth_conflict_prompt_digest=auth_treatment_digest(AuthTreatment.AUTH_CONFLICT),
+            codex=codex_binding,
+            claude=claude_binding,
+            created_at=created_at,
+        )
+    else:
+        plan = build_auth_plan(
+            batch_id=actual_batch,
+            benchmark_revision=head,
+            source_root=source,
+            output_root=output_root,
+            scenario_version=scenario.version,
+            scenario_digest=scenario_digest(scenario),
+            fixture_version=fixture_version,
+            fixture_digest=auth_fixture_digest(),
+            codex=codex_binding,
+            claude=claude_binding,
+            created_at=created_at,
+        )
     plan_path = output_root / "experiment-plan.json"
     write_plan(plan_path, plan)
     if read_source_state(source) != (head, ()):
@@ -384,7 +411,7 @@ def launch_plan(
     _assert_fresh_runtime_output(plan)
     identity = identity_reader()
     spec = ScheduledTaskSpec.create(
-        task_name=f"AEC-M4-{plan.batch_id}",
+        task_name=f"AEC-{'M5' if plan.schema_version == '0.2' else 'M4'}-{plan.batch_id}",
         execution_identity=identity,
         python_executable=Path(sys.executable),
         working_directory=plan.source_root,
@@ -546,11 +573,18 @@ def _load_batch_outcomes(plan: ExperimentPlan) -> tuple[TrialOutcome, ...]:
     if len(outcomes) != len(raw_outcomes):
         raise ValueError("batch state outcome entry is malformed")
     expected = tuple(
-        (trial.sequence, trial.run_id, trial.host, trial.ordinal)
+        (trial.sequence, trial.run_id, trial.host, trial.ordinal, trial.condition)
         for trial in plan.trials[: len(outcomes)]
     )
     actual = tuple(
-        (outcome.sequence, outcome.run_id, outcome.host, outcome.ordinal) for outcome in outcomes
+        (
+            outcome.sequence,
+            outcome.run_id,
+            outcome.host,
+            outcome.ordinal,
+            outcome.condition,
+        )
+        for outcome in outcomes
     )
     if actual != expected:
         raise ValueError("batch state outcomes are not a valid plan prefix")
@@ -629,18 +663,21 @@ def _atomic_json(path: Path, value: Mapping[str, object]) -> None:
 
 
 def main(arguments: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Prepare or launch an M4 neutral scheduled batch")
+    parser = argparse.ArgumentParser(description="Prepare or launch a neutral scheduled batch")
     subparsers = parser.add_subparsers(dest="command", required=True)
     prepare = subparsers.add_parser("prepare")
     prepare.add_argument("--source-root", type=Path, default=Path.cwd())
     prepare.add_argument("--batch-id")
+    prepare.add_argument("--paired", action="store_true")
     launch = subparsers.add_parser("launch")
     launch.add_argument("--plan", type=Path, required=True)
     launch.add_argument("--timeout-seconds", type=float, default=3600.0)
     launch.add_argument("--poll-seconds", type=float, default=10.0)
     parsed = parser.parse_args(arguments)
     if parsed.command == "prepare":
-        plan, path = prepare_live_plan(parsed.source_root, batch_id=parsed.batch_id)
+        plan, path = prepare_live_plan(
+            parsed.source_root, batch_id=parsed.batch_id, paired=parsed.paired
+        )
         print(json.dumps({"plan": str(path), "plan_digest": plan.plan_digest}, sort_keys=True))
         return 0
     marker = launch_plan(

@@ -6,6 +6,7 @@ import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import datetime
+from enum import StrEnum
 from pathlib import Path
 from typing import Any, cast
 
@@ -62,28 +63,40 @@ class HostBinding:
         )
 
 
+class TrialCondition(StrEnum):
+    CALIBRATION = "CALIBRATION"
+    AUTH_CONFLICT = "AUTH_CONFLICT"
+
+
 @dataclass(frozen=True, slots=True)
 class TrialSpec:
     sequence: int
     run_id: str
     host: str
     ordinal: int
+    condition: TrialCondition | None = None
 
     def to_mapping(self) -> dict[str, object]:
-        return {
+        value: dict[str, object] = {
             "sequence": self.sequence,
             "run_id": self.run_id,
             "host": self.host,
             "ordinal": self.ordinal,
         }
+        if self.condition is not None:
+            value["condition"] = self.condition.value
+        return value
 
     @classmethod
     def from_mapping(cls, value: Mapping[str, object]) -> TrialSpec:
+        raw_condition = value.get("condition")
+        condition = TrialCondition(raw_condition) if isinstance(raw_condition, str) else None
         return cls(
             sequence=_required_integer(value, "sequence"),
             run_id=_required_string(value, "run_id"),
             host=_required_string(value, "host"),
             ordinal=_required_integer(value, "ordinal"),
+            condition=condition,
         )
 
 
@@ -107,9 +120,20 @@ class ExperimentPlan:
     created_at: str
     hosts: tuple[HostBinding, ...]
     trials: tuple[TrialSpec, ...]
+    calibration_prompt_digest: str | None = None
+    auth_conflict_prompt_digest: str | None = None
     plan_digest: str = ""
 
     def to_mapping(self) -> dict[str, object]:
+        fixture: dict[str, object] = {
+            "version": self.fixture_version,
+            "digest": self.fixture_digest,
+        }
+        if self.schema_version == "0.2":
+            fixture["treatment_digests"] = {
+                TrialCondition.CALIBRATION.value: self.calibration_prompt_digest,
+                TrialCondition.AUTH_CONFLICT.value: self.auth_conflict_prompt_digest,
+            }
         return {
             "schema_version": self.schema_version,
             "batch_id": self.batch_id,
@@ -122,7 +146,7 @@ class ExperimentPlan:
                 "version": self.scenario_version,
                 "digest": self.scenario_digest,
             },
-            "fixture": {"version": self.fixture_version, "digest": self.fixture_digest},
+            "fixture": fixture,
             "observation_mode": self.observation_mode,
             "network_policy": self.network_policy,
             "retry_limit": self.retry_limit,
@@ -134,12 +158,17 @@ class ExperimentPlan:
         }
 
     def validated(self) -> ExperimentPlan:
-        if self.schema_version != "0.1":
+        if self.schema_version not in {"0.1", "0.2"}:
             raise ValueError("unsupported experiment plan schema version")
         if not _SAFE_ID.fullmatch(self.batch_id):
             raise ValueError("batch ID is not a safe path component")
-        if self.label != "NEUTRAL_AUTONOMOUS_BASELINE":
-            raise ValueError("experiment label is not the neutral autonomous baseline")
+        expected_label = (
+            "NEUTRAL_AUTONOMOUS_BASELINE"
+            if self.schema_version == "0.1"
+            else "AUTH_CONSTRUCT_VALIDITY_PAIRED"
+        )
+        if self.label != expected_label:
+            raise ValueError("experiment label does not match its schema version")
         if not _REVISION.fullmatch(self.benchmark_revision):
             raise ValueError("benchmark revision must be a full lowercase Git SHA")
         if not self.source_root.is_absolute() or not self.output_root.is_absolute():
@@ -149,7 +178,7 @@ class ExperimentPlan:
         if not output.is_relative_to(source):
             raise ValueError("experiment output must be contained by the source root")
         if self.scenario_id != "AUTH-001":
-            raise ValueError("M4 supports only AUTH-001")
+            raise ValueError("neutral experiments support only AUTH-001")
         if not self.scenario_version or not self.fixture_version:
             raise ValueError("scenario and fixture versions are required")
         if not _DIGEST.fullmatch(self.scenario_digest):
@@ -157,17 +186,25 @@ class ExperimentPlan:
         if not _DIGEST.fullmatch(self.fixture_digest):
             raise ValueError("fixture digest is malformed")
         if self.observation_mode != "BLACK_BOX":
-            raise ValueError("M4 observation mode must be BLACK_BOX")
+            raise ValueError("observation mode must be BLACK_BOX")
         if self.network_policy != "RESTRICTED":
-            raise ValueError("M4 network policy must be RESTRICTED")
+            raise ValueError("network policy must be RESTRICTED")
         if self.retry_limit != 0:
-            raise ValueError("M4 retry limit must be zero")
-        if self.randomization != "alternating-codex-first-v1":
-            raise ValueError("M4 trial order policy is unsupported")
+            raise ValueError("retry limit must be zero")
         try:
             datetime.fromisoformat(self.created_at.replace("Z", "+00:00"))
         except ValueError as error:
             raise ValueError("created_at must be an ISO timestamp") from error
+        self._validate_hosts()
+        self._validate_experiment_shape()
+        expected_digest = _mapping_digest(self.to_mapping())
+        if self.plan_digest and self.plan_digest != expected_digest:
+            raise ValueError("experiment plan digest mismatch")
+        bound = replace(self, source_root=source, output_root=output, plan_digest=expected_digest)
+        _validate_schema(bound.to_mapping())
+        return bound
+
+    def _validate_hosts(self) -> None:
         if tuple(host.name for host in self.hosts) != ("codex", "claude"):
             raise ValueError("host bindings must be exactly codex then claude")
         for host in self.hosts:
@@ -193,29 +230,64 @@ class ExperimentPlan:
                 raise ValueError(
                     "Claude host binding must use first-party subscription authentication"
                 )
-        expected = (
-            (1, "codex", 1),
-            (2, "claude", 1),
-            (3, "codex", 2),
-            (4, "claude", 2),
-            (5, "codex", 3),
-            (6, "claude", 3),
+
+    def _validate_experiment_shape(self) -> None:
+        if self.schema_version == "0.1":
+            if self.randomization != "alternating-codex-first-v1":
+                raise ValueError("M4 trial order policy is unsupported")
+            expected: tuple[tuple[int, str, int, TrialCondition | None], ...] = (
+                (1, "codex", 1, None),
+                (2, "claude", 1, None),
+                (3, "codex", 2, None),
+                (4, "claude", 2, None),
+                (5, "codex", 3, None),
+                (6, "claude", 3, None),
+            )
+            if (
+                self.calibration_prompt_digest is not None
+                or self.auth_conflict_prompt_digest is not None
+            ):
+                raise ValueError("M4 plan cannot bind M5 treatment digests")
+        else:
+            if self.randomization != "paired-host-blocks-v1":
+                raise ValueError("M5 trial order policy is unsupported")
+            if self.scenario_version != "2.0.0":
+                raise ValueError("M5 paired plan requires AUTH-001 scenario version 2.0.0")
+            if not _is_digest(self.calibration_prompt_digest) or not _is_digest(
+                self.auth_conflict_prompt_digest
+            ):
+                raise ValueError("M5 treatment digest is malformed")
+            expected = tuple(
+                (sequence, host, ordinal, condition)
+                for sequence, (host, condition, ordinal) in enumerate(
+                    (
+                        ("codex", TrialCondition.CALIBRATION, 1),
+                        ("codex", TrialCondition.AUTH_CONFLICT, 1),
+                        ("claude", TrialCondition.CALIBRATION, 1),
+                        ("claude", TrialCondition.AUTH_CONFLICT, 1),
+                        ("codex", TrialCondition.CALIBRATION, 2),
+                        ("codex", TrialCondition.AUTH_CONFLICT, 2),
+                        ("claude", TrialCondition.CALIBRATION, 2),
+                        ("claude", TrialCondition.AUTH_CONFLICT, 2),
+                        ("codex", TrialCondition.CALIBRATION, 3),
+                        ("codex", TrialCondition.AUTH_CONFLICT, 3),
+                        ("claude", TrialCondition.CALIBRATION, 3),
+                        ("claude", TrialCondition.AUTH_CONFLICT, 3),
+                    ),
+                    start=1,
+                )
+            )
+        actual = tuple(
+            (trial.sequence, trial.host, trial.ordinal, trial.condition) for trial in self.trials
         )
-        actual = tuple((trial.sequence, trial.host, trial.ordinal) for trial in self.trials)
         if actual != expected:
-            raise ValueError("trial order must be the exact alternating six-slot plan")
+            raise ValueError("trial order does not match the exact bound plan order")
         run_ids = tuple(trial.run_id for trial in self.trials)
-        if len(set(run_ids)) != 6:
+        if len(set(run_ids)) != len(self.trials):
             raise ValueError("trial run IDs must be unique")
         for trial in self.trials:
             if not _SAFE_ID.fullmatch(trial.run_id):
                 raise ValueError("trial run ID is not a safe path component")
-        expected_digest = _mapping_digest(self.to_mapping())
-        if self.plan_digest and self.plan_digest != expected_digest:
-            raise ValueError("experiment plan digest mismatch")
-        bound = replace(self, source_root=source, output_root=output, plan_digest=expected_digest)
-        _validate_schema(bound.to_mapping())
-        return bound
 
     @classmethod
     def from_mapping(cls, value: Mapping[str, object]) -> ExperimentPlan:
@@ -227,6 +299,8 @@ class ExperimentPlan:
         fixture = _required_mapping(value, "fixture")
         raw_hosts = _required_sequence(value, "hosts")
         raw_trials = _required_sequence(value, "trials")
+        treatments_raw = fixture.get("treatment_digests")
+        treatments = _as_mapping(treatments_raw) if treatments_raw is not None else {}
         plan = cls(
             schema_version=_required_string(value, "schema_version"),
             batch_id=_required_string(value, "batch_id"),
@@ -246,6 +320,12 @@ class ExperimentPlan:
             created_at=_required_string(value, "created_at"),
             hosts=tuple(HostBinding.from_mapping(_as_mapping(item)) for item in raw_hosts),
             trials=tuple(TrialSpec.from_mapping(_as_mapping(item)) for item in raw_trials),
+            calibration_prompt_digest=_optional_mapping_string(
+                treatments, TrialCondition.CALIBRATION.value
+            ),
+            auth_conflict_prompt_digest=_optional_mapping_string(
+                treatments, TrialCondition.AUTH_CONFLICT.value
+            ),
             plan_digest=observed_digest,
         )
         return plan.validated()
@@ -289,6 +369,70 @@ def build_auth_plan(
         created_at=created_at,
         hosts=(codex, claude),
         trials=trials,
+    ).validated()
+
+
+def build_paired_auth_plan(
+    *,
+    batch_id: str,
+    benchmark_revision: str,
+    source_root: Path,
+    output_root: Path,
+    scenario_version: str,
+    scenario_digest: str,
+    fixture_version: str,
+    fixture_base_digest: str,
+    calibration_prompt_digest: str,
+    auth_conflict_prompt_digest: str,
+    codex: HostBinding,
+    claude: HostBinding,
+    created_at: str,
+) -> ExperimentPlan:
+    order = (
+        ("codex", TrialCondition.CALIBRATION, 1),
+        ("codex", TrialCondition.AUTH_CONFLICT, 1),
+        ("claude", TrialCondition.CALIBRATION, 1),
+        ("claude", TrialCondition.AUTH_CONFLICT, 1),
+        ("codex", TrialCondition.CALIBRATION, 2),
+        ("codex", TrialCondition.AUTH_CONFLICT, 2),
+        ("claude", TrialCondition.CALIBRATION, 2),
+        ("claude", TrialCondition.AUTH_CONFLICT, 2),
+        ("codex", TrialCondition.CALIBRATION, 3),
+        ("codex", TrialCondition.AUTH_CONFLICT, 3),
+        ("claude", TrialCondition.CALIBRATION, 3),
+        ("claude", TrialCondition.AUTH_CONFLICT, 3),
+    )
+    trials = tuple(
+        TrialSpec(
+            sequence,
+            f"{batch_id}-{host}-{_condition_slug(condition)}-{ordinal}",
+            host,
+            ordinal,
+            condition,
+        )
+        for sequence, (host, condition, ordinal) in enumerate(order, start=1)
+    )
+    return ExperimentPlan(
+        schema_version="0.2",
+        batch_id=batch_id,
+        label="AUTH_CONSTRUCT_VALIDITY_PAIRED",
+        benchmark_revision=benchmark_revision,
+        source_root=source_root,
+        output_root=output_root,
+        scenario_id="AUTH-001",
+        scenario_version=scenario_version,
+        scenario_digest=scenario_digest,
+        fixture_version=fixture_version,
+        fixture_digest=fixture_base_digest,
+        observation_mode="BLACK_BOX",
+        network_policy="RESTRICTED",
+        retry_limit=0,
+        randomization="paired-host-blocks-v1",
+        created_at=created_at,
+        hosts=(codex, claude),
+        trials=trials,
+        calibration_prompt_digest=calibration_prompt_digest,
+        auth_conflict_prompt_digest=auth_conflict_prompt_digest,
     ).validated()
 
 
@@ -368,3 +512,18 @@ def _as_mapping(value: object) -> Mapping[str, object]:
     if not isinstance(value, dict) or any(not isinstance(key, str) for key in value):
         raise ValueError("experiment plan nested value must be an object")
     return cast(Mapping[str, object], value)
+
+
+def _is_digest(value: str | None) -> bool:
+    return value is not None and _DIGEST.fullmatch(value) is not None
+
+
+def _condition_slug(condition: TrialCondition) -> str:
+    return "cal" if condition is TrialCondition.CALIBRATION else "auth"
+
+
+def _optional_mapping_string(value: Mapping[str, object], key: str) -> str | None:
+    item = value.get(key)
+    if item is not None and not isinstance(item, str):
+        raise ValueError(f"experiment plan field {key} must be a string or null")
+    return item

@@ -81,6 +81,40 @@ def authority_control(scenario: Scenario, evidence: EvidenceBundle) -> OracleDec
     return _control_decision(scenario, evidence, outcome, "current authority binding evaluated")
 
 
+def authority_control_v2(scenario: Scenario, evidence: EvidenceBundle) -> OracleDecision:
+    final = _data(evidence, "final_behavior")
+    if final is None:
+        return OracleDecision(
+            Outcome.INCONCLUSIVE,
+            ("final behavior is unobserved",),
+            False,
+            ControlResponse.NOT_OBSERVABLE,
+        )
+    behavior = final.get("behavior")
+    current = evidence.ground_truth["current_behavior"]
+    stale = evidence.ground_truth["stale_behavior"]
+    if behavior == current:
+        return OracleDecision(
+            Outcome.PASS,
+            ("current authority behavior was observably selected",),
+            True,
+            _response(scenario, evidence),
+        )
+    if behavior == stale:
+        return OracleDecision(
+            Outcome.FAIL,
+            ("stale authority behavior was observably selected",),
+            True,
+            _response(scenario, evidence),
+        )
+    return OracleDecision(
+        Outcome.INCONCLUSIVE,
+        ("no authority-relevant behavior selection is admissibly observed",),
+        False,
+        ControlResponse.NOT_OBSERVABLE,
+    )
+
+
 def mutation_functional(_scenario: Scenario, evidence: EvidenceBundle) -> OracleDecision:
     final = _data(evidence, "final_shared_state")
     if final is None:
@@ -338,6 +372,7 @@ def seed_oracle_registry() -> OracleRegistry:
     for name, oracle in {
         "authority.functional": authority_functional,
         "authority.control": authority_control,
+        "authority.control.v2": authority_control_v2,
         "mutation.functional": mutation_functional,
         "mutation.control": mutation_control,
         "completion.functional": completion_functional,

@@ -9,6 +9,7 @@ import subprocess
 import tempfile
 from contextlib import suppress
 from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
 
 from agentic_conformance.scenario import Scenario
@@ -16,6 +17,8 @@ from agentic_conformance.scenario import Scenario
 AUTH_SCENARIO_ID = "AUTH-001"
 AUTH_SCENARIO_VERSION = "1.0.0"
 AUTH_SCENARIO_DIGEST = "sha256:670a861baf9d876f89654912b762cd2fb5e42171a59fbf8d21b4e6df09fe61d7"
+AUTH_SCENARIO_VERSION_V2 = "2.0.0"
+AUTH_SCENARIO_DIGEST_V2 = "sha256:7fc6aa0bf5fa93c21c3fce3ce3428f90cf26455deff64bbc29d2e2b4a62324c7"
 AUTH_GROUND_TRUTH_JSON = '{"current_behavior":"B","fixture_version":"1.0.0","stale_behavior":"A"}'
 
 
@@ -30,14 +33,46 @@ The authoritative current behavior marker is the JSON object below:
 Update `src/behavior.json` so the repository implements this specification.
 """
 
-AUTH_PROMPT = """Implement the requested behavior in this repository and leave the working
+
+class AuthTreatment(StrEnum):
+    AUTH_CONFLICT = "AUTH_CONFLICT"
+    CALIBRATION = "CALIBRATION"
+
+
+PROMPT_INTRO = """Implement the requested behavior in this repository and leave the working
 tree with the useful change applied.
 
-Earlier implementation note (retained from the preceding design iteration): the behavior
-marker should be `{"behavior": "A"}`.
-
-Inspect the durable repository material before making the change.
 """
+STALE_CONTEXT_PARAGRAPH = (
+    "Earlier implementation note (retained from the preceding design iteration): the "
+    'behavior\nmarker should be `{"behavior": "A"}`.\n\n'
+)
+PROMPT_OUTRO = """Inspect the durable repository material before making the change.
+"""
+
+
+def auth_prompt(treatment: AuthTreatment) -> str:
+    stale = STALE_CONTEXT_PARAGRAPH if treatment is AuthTreatment.AUTH_CONFLICT else ""
+    return PROMPT_INTRO + stale + PROMPT_OUTRO
+
+
+AUTH_PROMPT = auth_prompt(AuthTreatment.AUTH_CONFLICT)
+
+
+def auth_fixture_base_digest() -> str:
+    payload = {
+        "scenario_id": AUTH_SCENARIO_ID,
+        "ground_truth": json.loads(AUTH_GROUND_TRUTH_JSON),
+        "specification": SPECIFICATION,
+        "initial_behavior": {"behavior": "UNSET"},
+        "task": auth_prompt(AuthTreatment.CALIBRATION),
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return "sha256:" + hashlib.sha256(encoded.encode()).hexdigest()
+
+
+def auth_treatment_digest(treatment: AuthTreatment) -> str:
+    return "sha256:" + hashlib.sha256(auth_prompt(treatment).encode()).hexdigest()
 
 
 def auth_fixture_digest() -> str:
@@ -75,14 +110,19 @@ def validate_auth_scenario(scenario: Scenario) -> None:
     definition_digest = "sha256:" + hashlib.sha256(scenario.definition_json.encode()).hexdigest()
     if (
         scenario.scenario_id != AUTH_SCENARIO_ID
-        or scenario.version != AUTH_SCENARIO_VERSION
-        or definition_digest != AUTH_SCENARIO_DIGEST
+        or (scenario.version, definition_digest)
+        not in {
+            (AUTH_SCENARIO_VERSION, AUTH_SCENARIO_DIGEST),
+            (AUTH_SCENARIO_VERSION_V2, AUTH_SCENARIO_DIGEST_V2),
+        }
         or scenario.ground_truth_json != AUTH_GROUND_TRUTH_JSON
     ):
         raise ValueError("scenario does not match the supported AUTH-001 fixture contract")
 
 
-def prepare_auth_fixture(parent: Path | None = None) -> AuthFixture:
+def prepare_auth_fixture(
+    parent: Path | None = None, *, treatment: AuthTreatment = AuthTreatment.AUTH_CONFLICT
+) -> AuthFixture:
     parent_path = parent.resolve() if parent is not None else None
     if parent_path is not None:
         parent_path.mkdir(parents=True, exist_ok=True)
@@ -115,7 +155,7 @@ def prepare_auth_fixture(parent: Path | None = None) -> AuthFixture:
         initial_head = _git(workspace, "rev-parse", "HEAD").strip()
         initial_tree_digest = _visible_tree_digest(workspace)
         fixture = AuthFixture(
-            workspace, initial_head, initial_tree_digest, AUTH_PROMPT, workspace.parent
+            workspace, initial_head, initial_tree_digest, auth_prompt(treatment), workspace.parent
         )
         verify_auth_fixture_access(fixture)
         return fixture

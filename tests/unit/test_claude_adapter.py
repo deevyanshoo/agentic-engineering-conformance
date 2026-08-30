@@ -8,6 +8,11 @@ from pathlib import Path
 
 import pytest
 
+from agentic_conformance.adapters.auth_fixture import (
+    STALE_CONTEXT_PARAGRAPH,
+    AuthTreatment,
+    auth_prompt,
+)
 from agentic_conformance.adapters.base import PreparedRun
 from agentic_conformance.adapters.claude import ClaudeAdapter
 from agentic_conformance.adapters.process import ProcessResult
@@ -273,3 +278,29 @@ def test_adapter_rejects_changed_auth_scenario_before_execution(tmp_path: Path) 
     assert record.result.classification is RunClassification.INVALID_RUN
     assert "supported AUTH-001" in (record.adapter_error or "")
     assert len(process.calls) == 2
+
+
+def test_calibration_treatment_reaches_claude_prompt_without_stale_context(
+    tmp_path: Path,
+) -> None:
+    process = QueuedRunner(
+        _ready_results(
+            _result(
+                stdout='{"type":"result","subtype":"success","is_error":false,"result":"done"}\n'
+            )
+        )
+    )
+    adapter = ClaudeAdapter(
+        process_runner=process,
+        executable_resolver=lambda _: "C:/tools/claude.CMD",
+        workspace_parent=tmp_path,
+        treatment=AuthTreatment.CALIBRATION,
+    )
+
+    record = Runner(seed_oracle_registry()).run(_scenario(), adapter)
+
+    assert record.executed is True
+    prompt = process.calls[2][2]
+    assert prompt == auth_prompt(AuthTreatment.CALIBRATION)
+    assert STALE_CONTEXT_PARAGRAPH not in prompt
+    assert record.evidence.artifacts_of_kind("adversarial_exercise") == ()

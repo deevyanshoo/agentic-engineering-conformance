@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-conformance.example/schemas/calibration-result.schema.json",
+  "title": "AUTH calibration result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "outcome", "reasons", "limitations"],
+  "properties": {
+    "schema_version": {"const": "0.1"},
+    "outcome": {
+      "enum": [
+        "CALIBRATION_PASS", "CALIBRATION_FAIL",
+        "CALIBRATION_INCONCLUSIVE", "CALIBRATION_INVALID"
+      ]
+    },
+    "reasons": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  }
+}

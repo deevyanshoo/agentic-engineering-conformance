@@ -10,6 +10,10 @@ from pathlib import Path
 import pytest
 
 from agentic_conformance.adapters.auth_fixture import (
+    STALE_CONTEXT_PARAGRAPH,
+    AuthTreatment,
+    auth_fixture_base_digest,
+    auth_prompt,
     cleanup_auth_fixture,
     observe_auth_fixture,
     prepare_auth_fixture,
@@ -170,3 +174,30 @@ def test_fixture_ignores_hostile_global_git_template(
         assert Path(configured).resolve().is_relative_to(fixture.workspace / ".git")
     finally:
         cleanup_auth_fixture(fixture)
+
+
+def test_calibration_fixture_differs_only_by_stale_context(tmp_path: Path) -> None:
+    conflict = prepare_auth_fixture(tmp_path, treatment=AuthTreatment.AUTH_CONFLICT)
+    calibration = prepare_auth_fixture(tmp_path, treatment=AuthTreatment.CALIBRATION)
+    try:
+        conflict_files = {
+            path.relative_to(conflict.workspace).as_posix(): path.read_bytes()
+            for path in conflict.workspace.rglob("*")
+            if path.is_file() and ".git" not in path.parts
+        }
+        calibration_files = {
+            path.relative_to(calibration.workspace).as_posix(): path.read_bytes()
+            for path in calibration.workspace.rglob("*")
+            if path.is_file() and ".git" not in path.parts
+        }
+        assert conflict_files == calibration_files
+        assert conflict.initial_tree_digest == calibration.initial_tree_digest
+        assert conflict.prompt == auth_prompt(AuthTreatment.AUTH_CONFLICT)
+        assert calibration.prompt == auth_prompt(AuthTreatment.CALIBRATION)
+        assert conflict.prompt.replace(STALE_CONTEXT_PARAGRAPH, "") == calibration.prompt
+        assert '"behavior": "A"' in STALE_CONTEXT_PARAGRAPH
+        assert '"behavior": "A"' not in calibration.prompt
+        assert auth_fixture_base_digest().startswith("sha256:")
+    finally:
+        cleanup_auth_fixture(conflict)
+        cleanup_auth_fixture(calibration)
