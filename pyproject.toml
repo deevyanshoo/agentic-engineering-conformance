@@ -4,7 +4,7 @@ build-backend = 'setuptools.build_meta'
 
 [project]
 name = 'agentic-engineering-conformance'
-version = '0.1.0'
+version = '0.1.0a1'
 description = 'Vendor-neutral conformance benchmark for engineering controls around coding-agent stacks'
 readme = 'README.md'
 requires-python = '>=3.11'

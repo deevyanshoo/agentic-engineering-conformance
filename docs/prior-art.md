@@ -1,15 +1,29 @@
 # Prior art and provenance
 
-The project combines established ideas and does not claim ownership of them. This list is representative, not a novelty survey or endorsement.
+This project combines established ideas and does not claim ownership of them. The list is representative, dated for the alpha, and neither a novelty survey nor an endorsement.
 
-- Deterministic evaluation and reproducible test fixtures are established software-testing practice; [pytest](https://docs.pytest.org/) is the M1 test harness.
-- Supply-chain provenance and subject binding have mature precedent in [SLSA provenance](https://slsa.dev/spec/v1.0/provenance) and [in-toto](https://in-toto.io/). M1 does not implement either standard.
-- Trace/event vocabulary has extensive precedent in [OpenTelemetry traces](https://opentelemetry.io/docs/concepts/signals/traces/) and [W3C PROV](https://www.w3.org/TR/prov-overview/). M1 deliberately defines only minimal internal evidence fields.
-- Dependency graphs and selective rebuilding/invalidation are foundational build-system concepts; see the [GNU make manual](https://www.gnu.org/software/make/manual/html_node/Introduction.html).
-- Isolated concurrent development has long-standing support in [Git worktrees](https://git-scm.com/docs/git-worktree). The benchmark does not require worktrees as the mechanism.
-- Secure-development verification and evidence expectations have broad precedent in the [NIST Secure Software Development Framework](https://csrc.nist.gov/pubs/sp/800/218/final).
-- Risk and governance controls for AI systems have broad precedent in the [NIST AI Risk Management Framework](https://www.nist.gov/itl/ai-risk-management-framework).
-- Benchmarking coding agents has major prior art including [SWE-bench](https://www.swebench.com/). This project addresses a different unit of analysis: engineering controls around an agent stack.
-- Persistent task state, durable execution, independent review, evidence-gated completion, proof-of-done patterns, context-loss recovery, incident-derived evaluations, risk-proportionate review, agentic control planes, and multi-agent orchestration all predate this repository across workflow systems, CI/CD, safety engineering, and agent frameworks.
+## Engineering methods and agent workflows
 
-No third-party benchmark data or source text is copied here. References are links and short characterizations. The proposed contribution—a vendor-neutral adversarial conformance framework for control guarantees around coding-agent stacks—remains a hypothesis pending evidence.
+- [Proof-or-Stop](https://github.com/Proof-or-Stop) explores evidence-led stopping and completion practices for agentic work.
+- [Agentic Agile-V](https://github.com/Agile-V/agentic_agile_v) provides a verifiable AI-augmented engineering scaffold with briefs, evidence, gates, and traceability.
+- [Superpowers](https://github.com/obra/superpowers) is an agentic skills framework and software-development methodology with planning, test, review, and worktree practices.
+- [GitHub Spec Kit](https://github.com/github/spec-kit) provides tooling for specification-driven development.
+- [BMAD Method](https://github.com/bmad-code-org/BMAD-METHOD) is an AI-driven development method with structured planning and workflow roles.
+- [Agent Skills](https://agentskills.io/specification) defines a portable format for packaging agent instructions and resources. This benchmark does not define another skills format.
+- [Beads](https://github.com/gastownhall/beads) addresses durable issue/task memory for coding agents; [Gas Town](https://github.com/gastownhall/gastown) addresses multi-agent workspace orchestration. This project is neither a task tracker nor an orchestrator.
+
+## Verification, provenance, and conformance
+
+- Deterministic fixtures, regression tests, independent review, task graphs, dependency invalidation, isolated Git work, evidence-gated completion, persistent workflow state, and context-loss recovery are established software-engineering concepts.
+- [SLSA provenance](https://slsa.dev/spec/v1.0/provenance) and [in-toto](https://in-toto.io/) provide mature supply-chain provenance and subject-binding models. This alpha implements neither standard.
+- [OpenTelemetry traces](https://opentelemetry.io/docs/concepts/signals/traces/) and [W3C PROV](https://www.w3.org/TR/prov-overview/) provide extensive trace/provenance vocabulary. The benchmark uses only a small internal evidence model.
+- Build systems have long implemented selective dependency invalidation; the [GNU make manual](https://www.gnu.org/software/make/manual/html_node/Introduction.html) is one accessible reference.
+- [Git worktrees](https://git-scm.com/docs/git-worktree) are established isolation machinery. The MUT invariant does not prescribe worktrees.
+
+## Benchmarks, security, and governance
+
+- [SWE-bench](https://www.swebench.com/) is major coding-agent capability-benchmark prior art. Agentic Engineering Conformance studies a different unit: engineering controls around the agent stack.
+- Incident-derived evaluation, risk-proportionate review, agentic control planes, trace-based evaluation, and multi-agent orchestration predate this repository across CI/CD, safety engineering, workflow systems, and agent frameworks.
+- The [NIST Secure Software Development Framework](https://csrc.nist.gov/pubs/sp/800/218/final), [NIST AI Risk Management Framework](https://www.nist.gov/itl/ai-risk-management-framework), and [OWASP Agentic Security Initiative](https://genai.owasp.org/initiatives/agentic-security-initiative/) provide relevant secure-development and AI-risk context. This benchmark does not implement or certify conformance with them.
+
+No third-party benchmark data, prompts, or source text are copied here. Links and concise factual descriptions provide attribution. The proposed vendor-neutral adversarial framing remains a hypothesis whose usefulness must be established by evidence.

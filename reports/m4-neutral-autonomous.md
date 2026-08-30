@@ -31,9 +31,9 @@ API key, OAuth token, credential file, cookie, or complete environment dump was 
 ## Neutral execution boundary
 
 The outer implementation process registered exactly one on-demand Windows scheduled task,
-`AEC-M4-m4-neutral-20260828-autonomous`. It ran as the current user
-`desktop-pm3kt77\divyanshu` with `InteractiveToken`, least privilege, no stored password, and no
-highest-privilege setting. The scheduled action bound the expected plan digest literally.
+`AEC-M4-m4-neutral-20260828-autonomous`. It ran under the current authenticated Windows user with
+`InteractiveToken`, least privilege, no stored password, and no highest-privilege setting.
+The scheduled action bound the expected plan digest literally. Public-sanitized execution identity; the original historical commit retains the local machine/user principal.
 
 The worker recorded a valid `NEUTRAL_BASELINE` ancestry:
 

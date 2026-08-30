@@ -39,7 +39,7 @@ copying, administrator elevation, public release, merging, or live trials in Git
   `Logged in using ChatGPT` without a model call.
 - Claude Code executable present; version `2.1.236`; sanitized authentication status reported
   logged in via `claude.ai`, first-party provider, Pro subscription.
-- Current Windows identity: `desktop-pm3kt77\\divyanshu`.
+- Public-sanitized execution identity: current authenticated Windows user; the original historical commit retains the local machine/user principal.
 - Windows 10.0.19045 with Windows PowerShell 5.1; Task Scheduler command and PowerShell surfaces
   are installed.
 - No M4 scheduled task has been registered and no M4 model call has occurred.

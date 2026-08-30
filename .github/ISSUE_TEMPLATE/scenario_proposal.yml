@@ -1,0 +1,48 @@
+name: Scenario proposal
+description: Propose a synthetic scenario in an existing provisional domain
+title: "scenario: "
+labels: ["scenario"]
+body:
+  - type: dropdown
+    id: domain
+    attributes:
+      label: Existing domain
+      options: [AUTH, MUT, COMP, REV, INV, REC]
+    validations:
+      required: true
+  - type: textarea
+    id: invariant
+    attributes:
+      label: Protected object and invariant
+      description: State one falsifiable engineering-control guarantee.
+    validations:
+      required: true
+  - type: textarea
+    id: dimensions
+    attributes:
+      label: Functional and control outcomes
+      description: Define them separately, including an inconclusive state.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Exercise condition and admissible evidence
+      description: Explain deterministic E0/E1 scoring and any optional E2/E3.
+    validations:
+      required: true
+  - type: textarea
+    id: provenance
+    attributes:
+      label: Provenance, limitations, and synthetic fixture
+    validations:
+      required: true
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope and privacy
+      options:
+        - label: This is not a new domain, workflow runtime, or host-specific scoring rule.
+          required: true
+        - label: The proposal contains no credentials, proprietary data, or copied benchmark material.
+          required: true

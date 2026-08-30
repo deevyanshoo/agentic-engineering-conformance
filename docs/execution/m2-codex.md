@@ -23,7 +23,7 @@ Authority remains: current Git/repository state, repository documents and execut
 
 ## Codex environment
 
-- Executable resolved for Python: `C:\Users\Divyanshu\AppData\Roaming\npm\codex.CMD`.
+- Public-sanitized executable display: `%APPDATA%\npm\codex.CMD`; the original historical commit retains the local absolute path.
 - Version: `codex-cli 0.150.1`.
 - Authentication: `Logged in using ChatGPT`.
 - Reconciled user model identity: `gpt-5.6-sol`, reasoning `high`, service tier `default`.
