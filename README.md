@@ -1,4 +1,4 @@
-# CoderPolice 🚨
+# CoderPolice
 
 **Okay, but prove it.**
 
@@ -8,7 +8,7 @@ CoderPolice is an open-source **agentic engineering conformance** benchmark. Cod
 
 This repository is research-stage alpha software. It is not a certification program, security boundary, model leaderboard, or claim that its provisional taxonomy is complete.
 
-Current public research alpha: [`v0.1.0-alpha.1`](https://github.com/deevyanshoo/agentic-engineering-conformance/releases/tag/v0.1.0-alpha.1). Public hosted deterministic CI is green at the tagged release commit. The project was originally published under the technical working title **Agentic Engineering Conformance**; that phrase remains the technical descriptor while CoderPolice is the public project name.
+Current public research alpha: [`v0.1.0-alpha.1`](https://github.com/deevyanshoo/coderpolice/releases/tag/v0.1.0-alpha.1). Public hosted deterministic CI is green at the tagged release commit. The project was originally published under the technical working title **Agentic Engineering Conformance**; that phrase remains the technical descriptor while CoderPolice is the public project name.
 
 ## What is under test?
 
@@ -47,8 +47,8 @@ The benchmark records control response without imposing a universal mechanism ra
 Python 3.11 or newer is required. No model account, credential, network call, or paid subscription is needed.
 
 ```shell
-git clone https://github.com/deevyanshoo/agentic-engineering-conformance.git
-cd agentic-engineering-conformance
+git clone https://github.com/deevyanshoo/coderpolice.git
+cd coderpolice
 python -m venv .venv
 # POSIX: source .venv/bin/activate
 # Windows PowerShell: .venv\Scripts\Activate.ps1
@@ -94,7 +94,7 @@ Codex and Claude Code adapters require separately installed CLIs and existing su
 
 Start with [CONTRIBUTING.md](CONTRIBUTING.md). Scenario authors should read the [scenario guide](docs/contributing-scenarios.md); adapter authors should read the [adapter guide](docs/contributing-adapters.md). Security-sensitive reports belong through the private path in [SECURITY.md](SECURITY.md), not a public issue.
 
-If you want to challenge the benchmark rather than extend it, start with [Break CoderPolice: adversarial review of the benchmark semantics and evidence model](https://github.com/deevyanshoo/agentic-engineering-conformance/issues/11). Confirmed counterexamples should become versioned fixes and permanent regressions.
+If you want to challenge the benchmark rather than extend it, start with [Break CoderPolice: adversarial review of the benchmark semantics and evidence model](https://github.com/deevyanshoo/coderpolice/issues/11). Confirmed counterexamples should become versioned fixes and permanent regressions.
 
 ## Project status and roadmap
 
