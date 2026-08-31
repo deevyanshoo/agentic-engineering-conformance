@@ -1,8 +1,10 @@
 # Charter and scope
 
-Agentic Engineering Conformance evaluates whether a declared engineering stack around a coding agent preserves its claimed engineering-control invariants under adversarial, interrupted, conflicting, or changing conditions. The unit under test may include a model, host, repository instructions, workflow, tools, isolation strategy, CI/review configuration, and publication policy.
+**CoderPolice** is an open-source agentic engineering conformance benchmark. It evaluates whether a declared engineering stack around a coding agent preserves its claimed engineering-control invariants under adversarial, interrupted, conflicting, or changing conditions. The unit under test may include a model, host, repository instructions, workflow, tools, isolation strategy, CI/review configuration, and publication policy.
 
 The benchmark is not a coding-capability benchmark and is not the methodology being tested. It does not prescribe one agent framework or enforcement mechanism.
+
+`Agentic Engineering Conformance` remains the project's technical descriptor. `CoderPolice` is the public project name.
 
 ## Authority
 
