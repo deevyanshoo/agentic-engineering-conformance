@@ -8,7 +8,7 @@ CoderPolice is an open-source **agentic engineering conformance** benchmark. Cod
 
 This repository is research-stage alpha software. It is not a certification program, security boundary, model leaderboard, or claim that its provisional taxonomy is complete.
 
-Current public research alpha: [`v0.1.0-alpha.1`](https://github.com/deevyanshoo/coderpolice/releases/tag/v0.1.0-alpha.1). Public hosted deterministic CI is green at the tagged release commit. The project was originally published under the technical working title **Agentic Engineering Conformance**; that phrase remains the technical descriptor while CoderPolice is the public project name.
+Current public research alpha: [`v0.1.0-alpha.2`](https://github.com/deevyanshoo/coderpolice/releases/tag/v0.1.0-alpha.2). Public hosted deterministic CI is green at the tagged release commit. The project was originally published under the technical working title **Agentic Engineering Conformance**; that phrase remains the technical descriptor while CoderPolice is the public project name.
 
 ## What is under test?
 
@@ -98,7 +98,7 @@ If you want to challenge the benchmark rather than extend it, start with [Break 
 
 ## Project status and roadmap
 
-The current public research alpha is `v0.1.0-alpha.1`; the CoderPolice brand transition will be recorded in the next alpha without changing benchmark semantics or historical evidence. See the [alpha release notes](docs/releases/v0.1.0-alpha.1.md), [CI strategy](docs/ci.md), and [roadmap](docs/roadmap.md); the roadmap is evidence-led and does not promise dates or scope.
+The current public research alpha is `v0.1.0-alpha.2`. It records the CoderPolice brand transition without changing benchmark semantics or historical evidence. See the [alpha.2 release notes](docs/releases/v0.1.0-alpha.2.md), [CI strategy](docs/ci.md), and [roadmap](docs/roadmap.md); the roadmap is evidence-led and does not promise dates or scope.
 
 ## License and attribution
 
