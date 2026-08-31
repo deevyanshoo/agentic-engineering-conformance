@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for helping improve Agentic Engineering Conformance. The project values small, evidence-backed changes over scope expansion.
+Thank you for helping improve CoderPolice. The project values small, evidence-backed changes over scope expansion.
 
 ## Before opening a change
 

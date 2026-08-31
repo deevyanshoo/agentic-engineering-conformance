@@ -1,6 +1,6 @@
 # Public claim register
 
-This register defines the strongest claims supported by the repository. A passing result is scoped to its declared scenario, stack configuration, and admissible evidence; it is not a general certification.
+This register defines the strongest claims supported by CoderPolice. A passing result is scoped to its declared scenario, stack configuration, and admissible evidence; it is not a general certification.
 
 ## What we claim
 
@@ -32,6 +32,6 @@ This register defines the strongest claims supported by the repository. A passin
 - Production security certification, a complete agent-safety framework, or proof that a stack is safe outside the exact declared invariant.
 - Validation of all six domains against real hosts.
 - That a reference-adapter result predicts a stochastic host result.
-- Novelty or legal priority for the phrase "Agentic Engineering Conformance."
+- Novelty, trademark clearance, or legal priority for the product name `CoderPolice` or the technical descriptor `Agentic Engineering Conformance`.
 
 The candidate contribution is a vendor-neutral adversarial conformance framework for engineering-control guarantees around coding-agent stacks. That remains a research hypothesis, not a novelty claim. See [prior art](prior-art.md).

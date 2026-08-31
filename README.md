@@ -1,12 +1,14 @@
-# Agentic Engineering Conformance
+# CoderPolice 🚨
 
-Agentic Engineering Conformance tests the engineering system around a coding agent - not just whether the agent can write a correct patch.
+**Okay, but prove it.**
 
-Coding benchmarks usually ask whether an agent can solve a software task. This project asks whether the surrounding stack preserves declared guarantees about authority, mutation, completion evidence, review, invalidation, and reconstruction under adversarial or interrupted conditions.
+Coding agents are getting very good at saying they're done. CoderPolice checks whether the engineering system around them can actually prove it.
+
+CoderPolice is an open-source **agentic engineering conformance** benchmark. Coding benchmarks usually ask whether an agent can solve a software task. This project asks whether the surrounding stack preserves declared guarantees about authority, mutation, completion evidence, review, invalidation, and reconstruction under adversarial or interrupted conditions.
 
 This repository is research-stage alpha software. It is not a certification program, security boundary, model leaderboard, or claim that its provisional taxonomy is complete.
 
-Current public research alpha: [`v0.1.0-alpha.1`](https://github.com/deevyanshoo/agentic-engineering-conformance/releases/tag/v0.1.0-alpha.1). Public hosted deterministic CI is green at the tagged release commit.
+Current public research alpha: [`v0.1.0-alpha.1`](https://github.com/deevyanshoo/agentic-engineering-conformance/releases/tag/v0.1.0-alpha.1). Public hosted deterministic CI is green at the tagged release commit. The project was originally published under the technical working title **Agentic Engineering Conformance**; that phrase remains the technical descriptor while CoderPolice is the public project name.
 
 ## What is under test?
 
@@ -92,11 +94,11 @@ Codex and Claude Code adapters require separately installed CLIs and existing su
 
 Start with [CONTRIBUTING.md](CONTRIBUTING.md). Scenario authors should read the [scenario guide](docs/contributing-scenarios.md); adapter authors should read the [adapter guide](docs/contributing-adapters.md). Security-sensitive reports belong through the private path in [SECURITY.md](SECURITY.md), not a public issue.
 
-If you want to challenge the benchmark rather than extend it, start with [Break AEC: adversarial review of the benchmark semantics and evidence model](https://github.com/deevyanshoo/agentic-engineering-conformance/issues/11). Confirmed counterexamples should become versioned fixes and permanent regressions.
+If you want to challenge the benchmark rather than extend it, start with [Break CoderPolice: adversarial review of the benchmark semantics and evidence model](https://github.com/deevyanshoo/agentic-engineering-conformance/issues/11). Confirmed counterexamples should become versioned fixes and permanent regressions.
 
 ## Project status and roadmap
 
-The current public research alpha is `v0.1.0-alpha.1`. It includes the deterministic reference framework, six provisional domains and seed scenarios, Codex and Claude adapters for AUTH-001, scenario versioning, calibration, and the experimental neutral Windows worker. See the [alpha release notes](docs/releases/v0.1.0-alpha.1.md), [CI strategy](docs/ci.md), and [roadmap](docs/roadmap.md); the roadmap is evidence-led and does not promise dates or scope.
+The current public research alpha is `v0.1.0-alpha.1`; the CoderPolice brand transition will be recorded in the next alpha without changing benchmark semantics or historical evidence. See the [alpha release notes](docs/releases/v0.1.0-alpha.1.md), [CI strategy](docs/ci.md), and [roadmap](docs/roadmap.md); the roadmap is evidence-led and does not promise dates or scope.
 
 ## License and attribution
 
