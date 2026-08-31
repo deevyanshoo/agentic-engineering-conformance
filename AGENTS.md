@@ -1,6 +1,6 @@
 # Repository instructions
 
-This repository implements a vendor-neutral benchmark for engineering-control guarantees around coding-agent stacks.
+This repository implements **CoderPolice**, an open-source vendor-neutral benchmark for agentic engineering conformance around coding-agent stacks. `Agentic Engineering Conformance` remains the technical descriptor; historical milestone and evidence records must not be rewritten merely for branding.
 
 - Preserve the authority hierarchy documented in `docs/charter.md`.
 - Keep examples synthetic and domain-neutral.
@@ -24,5 +24,5 @@ This repository implements a vendor-neutral benchmark for engineering-control gu
 - Update `docs/execution/m4-neutral-experiments.md` for M4 state. Keep M4 stacked on M3, preserve
   historical M2/M3 trial records, persist no credentials, and make no host ranking from N=3.
 - Update `docs/execution/m5-auth-construct-validity.md` for M5 state. Preserve AUTH-001 v1 and all historical bundles; AUTH v2 and calibration must remain versioned, non-ranking, and independently replayable.
-- Update `docs/execution/m6-public-alpha-readiness.md` for M6 state. Keep M6 stacked on M5 and the repository PRIVATE until explicit founder publication authorization. Do not merge, tag, release, or change visibility while preparing `PUBLIC_ALPHA_READY`.
+- Update `docs/execution/m6-public-alpha-readiness.md` for M6 historical state. Do not rewrite the original PRIVATE/PUBLIC_ALPHA_READY boundary after publication.
 - Public artifacts must exclude credentials, raw prose-bearing host diagnostics, private reasoning, and unnecessary machine-identifying environment data. Ordinary deterministic contributor checks must not require paid model access.
