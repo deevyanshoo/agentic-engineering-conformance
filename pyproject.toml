@@ -3,9 +3,9 @@ requires = ['setuptools>=75']
 build-backend = 'setuptools.build_meta'
 
 [project]
-name = 'agentic-engineering-conformance'
-version = '0.1.0a1'
-description = 'Vendor-neutral conformance benchmark for engineering controls around coding-agent stacks'
+name = 'coderpolice'
+version = '0.1.0a2'
+description = 'Open-source agentic engineering conformance benchmark for coding-agent stacks'
 readme = 'README.md'
 requires-python = '>=3.11'
 license = 'Apache-2.0'
