@@ -2,7 +2,7 @@
 
 ## Alpha support boundary
 
-The planned `v0.1.0-alpha.1` release is research software. Only the latest alpha commit/release is supported for security fixes. The benchmark is not a sandbox, security certification, credential manager, or guarantee that a coding-agent host is safe.
+CoderPolice is research software. Only the latest public alpha commit/release is supported for security fixes. The benchmark is not a sandbox, security certification, credential manager, or guarantee that a coding-agent host is safe.
 
 ## Report privately
 
