@@ -124,17 +124,6 @@ def _status(value: bool, *, true: str, false: str) -> str:
 def render(report: DemoReport) -> str:
     stale = report.stale
     current = report.current
-    stale_admitted = (
-        stale.completion_verified
-        and stale.completion_digest == stale.verification_digest
-        and stale.verification_digest != stale.candidate_digest
-    )
-    current_admitted = (
-        current.completion_verified
-        and current.completion_digest == current.candidate_digest
-        and current.verification_digest == current.candidate_digest
-        and current.verification_passed
-    )
     offline_equal = stale.offline_rescore_equal and current.offline_rescore_equal
 
     lines = [
@@ -158,7 +147,8 @@ def render(report: DemoReport) -> str:
         f"control     {stale.result.control.value}",
         f"result      {stale.result.classification.value}",
         "",
-        "stale verification admitted: " + _status(stale_admitted, true="YES", false="NO"),
+        "stale verification admitted: "
+        + _status(stale.completion_verified, true="YES", false="NO"),
         "",
         "CASE 2: current evidence",
         "",
@@ -173,7 +163,8 @@ def render(report: DemoReport) -> str:
         f"control     {current.result.control.value}",
         f"result      {current.result.classification.value}",
         "",
-        "current verification admitted: " + _status(current_admitted, true="YES", false="NO"),
+        "current verification admitted: "
+        + _status(current.completion_verified, true="YES", false="NO"),
         "",
         "GUARDED_PASS means the stale condition was exercised and stale evidence did not admit B.",
         "BEHAVIORAL_PASS means the invariant holds, but no exercised guard was proven.",

@@ -30,6 +30,7 @@ def test_current_verification_mode_emits_admissible_b_bound_evidence() -> None:
     verifier = record.evidence.artifacts_of_kind("verifier_record")[0]
     completion = record.evidence.artifacts_of_kind("completion_state")[0]
     source_b = scenario.ground_truth["source_b_digest"]
+    assert verifier.artifact_id == "verifier-b"
     assert verifier.subject_digest == source_b
     assert verifier.data == {"subject_digest": source_b, "passed": True}
     assert completion.subject_digest == source_b

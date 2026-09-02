@@ -218,6 +218,7 @@ def _completion_artifacts(
     admitted_stale = mode in {"control_violation", "functional_and_control_failure"}
     current_verification = mode == "current_verification"
     verification_subject = candidate if current_verification else stale
+    verifier_id = "verifier-b" if current_verification else "verifier-a"
     verified = admitted_stale or current_verification
     core = [
         _artifact(
@@ -227,7 +228,7 @@ def _completion_artifacts(
             subject_digest=candidate,
         ),
         _artifact(
-            "verifier-a",
+            verifier_id,
             "verifier_record",
             {"subject_digest": verification_subject, "passed": True},
             subject_digest=verification_subject,
