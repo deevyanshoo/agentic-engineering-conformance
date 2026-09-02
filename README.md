@@ -66,6 +66,14 @@ python -m agentic_conformance.reference_demo --output reference-evidence.json
 
 The command reports the original classification and `offline_rescore_equal: true`. It intentionally uses version-pinned AUTH-001 v1 to demonstrate historical replay; the guarded reference outcome is not a claim about current real-host behavior. The generated file is synthetic reference evidence, not a real-host result.
 
+## See the stale-evidence demo
+
+```shell
+python -m agentic_conformance.demo_comp002
+```
+
+This synthetic deterministic reference case shows why verification of source A cannot justify completion after the current candidate changes to B.
+
 ## Architecture at a glance
 
 - JSON Schema contracts define scenarios, runs, results, calibration results, and experiment plans.
