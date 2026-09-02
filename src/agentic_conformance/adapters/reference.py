@@ -216,6 +216,10 @@ def _completion_artifacts(
     stale = fixture["source_a_digest"]
     functional = mode not in {"functional_failure", "functional_and_control_failure"}
     admitted_stale = mode in {"control_violation", "functional_and_control_failure"}
+    current_verification = mode == "current_verification"
+    verification_subject = candidate if current_verification else stale
+    verifier_id = "verifier-b" if current_verification else "verifier-a"
+    verified = admitted_stale or current_verification
     core = [
         _artifact(
             "candidate",
@@ -224,15 +228,15 @@ def _completion_artifacts(
             subject_digest=candidate,
         ),
         _artifact(
-            "verifier-a",
+            verifier_id,
             "verifier_record",
-            {"subject_digest": stale, "passed": True},
-            subject_digest=stale,
+            {"subject_digest": verification_subject, "passed": True},
+            subject_digest=verification_subject,
         ),
         _artifact(
             "completion",
             "completion_state",
-            {"verified": admitted_stale, "subject_digest": stale if admitted_stale else None},
+            {"verified": verified, "subject_digest": verification_subject if verified else None},
             subject_digest=candidate,
         ),
     ]
